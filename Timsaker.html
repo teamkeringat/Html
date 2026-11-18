@@ -1,1 +1,345 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TIMSAKER</title>
+<style>
+:root{color-scheme:dark;--bg:#0d1524;--card:#16233a;--in:#0f1a2b;--line:#2a3f5f;--txt:#e2e8f0;--mut:#8fa3bf;--acc:#38bdf8;--ok:#22c55e;--warn:#f59e0b;--bad:#ef4444;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;-webkit-tap-highlight-color:transparent}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{height:100%;margin:0;background:var(--bg);color:var(--txt);font-size:14px;overflow:hidden}
+.app{height:100%;max-width:520px;margin:0 auto;display:flex;flex-direction:column;padding:8px 12px 0}
+header{padding:2px 0 6px}.sb{display:flex;justify-content:space-between;align-items:center;margin-top:3px}.sb i{font-size:10px;color:var(--acc)}
+h1{margin:0;text-align:center;font-size:20px;font-weight:800;letter-spacing:3px;color:#e0f2fe;text-shadow:0 0 8px #38bdf8,0 0 16px rgba(56,189,248,.6)}
+#tgl{font-size:11px;color:var(--mut)}
+main{flex:1;min-height:0}
+.pn{display:none;flex-direction:column;height:100%;min-height:0;overflow-y:auto;gap:8px;padding-bottom:8px}
+.pn.on{display:flex}
+input,select,textarea{width:100%;padding:9px 10px;border-radius:8px;border:1px solid var(--line);background:var(--in);color:var(--txt);font-size:14px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--acc)}
+button{border:0;border-radius:8px;padding:9px 12px;font-weight:700;font-size:13px;cursor:pointer;color:#fff;background:#2563eb;white-space:nowrap}
+button:active{opacity:.8}
+.r{display:flex;gap:6px}
+.r select{width:74px;flex:none}
+.x{background:transparent;color:var(--bad);border:1px solid rgba(239,68,68,.5)}
+.mini{background:var(--in);color:var(--acc);border:1px solid var(--line);font-size:12px;padding:7px 10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px}
+.l{display:block;font-size:11px;color:var(--mut);margin:8px 0 3px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;max-height:140px;overflow-y:auto;margin-bottom:6px;padding:2px}.g4>*{height:40px;min-width:0}.g4 input{text-align:center;padding:0 4px}.g4 .mini{padding:0}
+.cek{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:13px}
+.cek input{width:18px;height:18px;padding:0;accent-color:#a78bfa}
+.hasil{display:grid;grid-template-columns:1fr auto;gap:3px 10px;font-size:13px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)}
+.hasil span{color:var(--mut)}
+.hasil b{text-align:right}
+.hasil .g{color:var(--ok)}.hasil .o{color:var(--warn)}
+.tot{background:#0f766e;border:1px solid #2dd4bf;border-radius:12px;padding:12px}
+.tot .hasil{margin-top:0;border-top:0;padding-top:0;font-size:14px}
+.tot .hasil span,.tot .l{color:#b8f3e9}
+.tot input,.tot select{background:#0b1f1e;border-color:#2dd4bf}
+.final{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:10px;border-top:1px solid rgba(153,246,228,.5)}
+.final span{font-weight:700;color:#b8f3e9}
+.final b{font-size:22px}
+.kosong{text-align:center;color:var(--mut);padding:30px 10px}
+.kosong b{display:block;font-size:19px;color:#facc15;margin-bottom:4px}
+#wa{flex:1;min-height:0;resize:none;font-family:monospace;font-size:12px;line-height:1.5}
+.wab{background:#128c7e}
+nav{display:flex;gap:4px;padding:6px 0 8px;border-top:1px solid var(--line)}
+nav button{flex:1;background:var(--card);color:var(--mut);border:1px solid var(--line);padding:11px 0}
+nav button.on{background:#2563eb;color:#fff;border-color:var(--acc)}
+#toast{position:fixed;left:50%;bottom:calc(70px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#0b1f1e;border:1px solid #2dd4bf;color:#fff;padding:8px 16px;border-radius:20px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s;white-space:nowrap}
+#toast.on{opacity:1}
+
+.lcd{background:#c9dcc1;color:#16261a;border-radius:10px;padding:8px 12px;margin-bottom:8px;box-shadow:inset 0 3px 8px rgba(0,0,0,.35),0 0 0 3px #223452;font-family:ui-monospace,'SF Mono','Courier New',monospace;text-align:right;min-height:92px;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden}
+.lcd small{display:block;font-size:11px;line-height:1.45;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:16px}
+.lcd b{display:block;font-size:30px;line-height:1.15;font-weight:800;white-space:nowrap}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.r input{min-width:0}
+button{border-bottom:3px solid rgba(0,0,0,.35)}
+nav button{border-bottom-width:3px}
+.sb{margin-bottom:2px}
+
+.li{flex:none;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 10px;max-height:150px;overflow-y:auto}
+.li .t{font-size:11px;color:var(--mut);margin-bottom:2px}
+.lr{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-top:1px dashed var(--line);font-size:13px}
+.lr small{display:block;color:var(--mut);font-size:11px}
+.lr .n{min-width:0}.lr .n b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lr .v{text-align:right;white-space:nowrap}.lr .v small{color:var(--ok);font-size:12px}
+.mo{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;padding:20px;z-index:50}
+.mo.on{display:flex}
+.mb{background:var(--card);border:1px solid var(--acc);border-radius:14px;padding:16px;width:100%;max-width:320px;display:flex;flex-direction:column;gap:12px}
+.mb h3{margin:0;font-size:15px;text-align:center;color:var(--acc)}
+.ic{flex:none;width:42px;padding:0;font-size:17px;background:var(--in);border:1px solid var(--line)}
+.ic.x{border-color:rgba(239,68,68,.5)}
+.cl{max-height:50vh;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
+.cl .cek{margin-top:6px}
+#wa{min-height:160px}
+</style>
+</head>
+<body>
+<div class="app">
+  <header><h1>⚡ TIMSAKER ⚡</h1><div class="sb"><i>(Timbangan Sahabat Keringat)</i><span id="tgl"></span></div></header>
+  <div class="lcd"><small id="d1"></small><small id="d2"></small><small id="d4"></small><b id="d3">Rp 0</b></div>
+  <main>
+    <section id="p0" class="pn on"></section>
+    <section id="p1" class="pn">
+      <div class="li" id="li"></div>
+      <div class="tot">
+        <div class="hasil" id="tt"></div>
+        <label class="l">Susut harga akhir (dari barang yang kena)</label>
+        <div class="r"><input id="av" type="text" inputmode="decimal" autocomplete="off" oninput="akhir.val=this.value;calc()">
+          <select id="am" onchange="akhir.mode=this.value;akhir.val='';$('av').value='';calc()"><option value="persen">%</option><option value="kg">Kg</option></select></div>
+      </div>
+      <button class="x" onclick="arm(this,'Yakin hapus semua?',reset)">Reset layar</button>
+    </section>
+    <section id="p2" class="pn"></section>
+    <section id="p3" class="pn"></section>
+  </main>
+  <nav>
+    <button class="on" onclick="show(0)">Barang</button>
+    <button onclick="show(1)">Total</button>
+    <button onclick="show(2)">Catatan</button>
+    <button onclick="show(3)">WA</button>
+  </nav>
+</div>
+<div id="toast"></div>
+<div class="mo" id="mo"><div class="mb"><h3 id="mt"></h3><input id="mi" type="text" autocomplete="off"><div class="r"><button class="mini" style="flex:1" onclick="mx()">Batal</button><button style="flex:1" onclick="mok()">OK</button></div></div></div>
+<div class="mo" id="mc"><div class="mb"><h3>Salin catatan mana saja?</h3><div class="cl" id="cl"></div><div class="r"><button class="mini" style="flex:1" onclick="mcx()">Batal</button><button class="wab" style="flex:1" onclick="mcok()">Salin</button></div></div></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const num=v=>{const x=parseFloat(String(v).replace(",","."));return isNaN(x)?0:x};
+const rp=n=>"Rp "+(Math.round(n)||0).toLocaleString("id-ID");
+const fm=n=>(Math.round(n*100)/100).toLocaleString("id-ID");
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const clone=o=>JSON.parse(JSON.stringify(o));
+const HR=["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"],BL=["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+
+let items=[],akhir={mode:"persen",val:""},uid=1,sel=null,active=null,saved=[],catSel=null,waSel=null;
+try{saved=JSON.parse(localStorage.getItem("timsaker_v2")||"[]")}catch(e){saved=[]}
+function store(){try{localStorage.setItem("timsaker_v2",JSON.stringify(saved))}catch(e){toast("Penyimpanan tidak tersedia")}}
+
+const D=new Date();$("tgl").textContent=`${HR[D.getDay()].slice(0,3)}, ${D.getDate()} ${BL[D.getMonth()].slice(0,3)} ${D.getFullYear()}`;
+function toast(t){const e=$("toast");e.textContent=t;e.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove("on"),2000)}
+function arm(b,label,fn){fn()}
+
+function hit(it){
+  const kg=it.det.map(num).filter(x=>x>0).reduce((a,b)=>a+b,0);
+  let s=it.smode==="kg"?num(it.sval):kg*num(it.sval)/100;
+  s=Math.max(0,Math.min(s,kg));
+  const h=num(it.harga);
+  return{kg,s,akh:kg-s,h,tot:kg*h,hAkh:(kg-s)*h,sRp:s*h};
+}
+function tot(list,ak){
+  let kgAwal=0,kgAkh=0,kena=0,bebas=0,sRp=0;
+  list.forEach(it=>{const r=hit(it);kgAwal+=r.kg;kgAkh+=r.akh;sRp+=r.sRp;it.kena?kena+=r.hAkh:bebas+=r.hAkh});
+  const pot=ak.mode==="kg"?num(ak.val)*(kgAwal>0?kena/kgAwal:0):kena*num(ak.val)/100;
+  return{kgAwal,kgAkh,kena,bebas,sRp,pot,hasil:kena-pot+bebas};
+}
+const totals=()=>tot(items,akhir);
+const find=id=>items.find(x=>x.id===id);
+
+let tab=0;
+function lcd(){
+  const t=totals(),it=find(sel);
+  let a="",b="",c="Rp 0",e="";
+  if(!items.length){a="Belum ada barang"}
+  else if(tab===0&&it){
+    const r=hit(it);
+    a=`${items.indexOf(it)+1}. ${it.nama} · ${it.kena?"kena":"bebas"} susut akhir`;
+    b=`${fm(r.kg)} Kg × ${rp(r.h)} = ${rp(r.tot)}`;
+    e=`Susut ${fm(r.s)} Kg (${rp(r.sRp)}) · Sisa ${fm(r.akh)} Kg`;
+    c=rp(r.hAkh);
+  }else{
+    a=`Total ${items.length} barang · akhir ${fm(t.kgAkh)} Kg`;
+    b=rp(t.kena+t.bebas)+(t.pot>0?` − ${rp(t.pot)}`:"");
+    e=`Susut ${fm(t.kgAwal-t.kgAkh)} Kg (${rp(t.sRp)})`;
+    c=rp(t.hasil);
+  }
+  $("d1").textContent=a;$("d2").textContent=b;$("d4").textContent=e;$("d3").textContent=c;
+  $("d3").style.fontSize=c.length>13?"24px":"30px";
+}
+function show(t){
+  tab=t;lcd();
+  document.querySelectorAll(".pn").forEach((p,i)=>p.classList.toggle("on",i===t));
+  document.querySelectorAll("nav button").forEach((b,i)=>b.classList.toggle("on",i===t));
+  if(t===2)drawCat();
+  if(t===3)drawWA();
+}
+
+let mcb=null;
+function tanya(j,ph,v,cb){$("mt").textContent=j;const i=$("mi");i.placeholder=ph;i.value=v||"";mcb=cb;$("mo").classList.add("on");setTimeout(()=>{i.focus();i.select()},80)}
+function mx(){$("mo").classList.remove("on");mcb=null}
+function mok(){const v=$("mi").value.trim();if(!v){toast("Nama tidak boleh kosong");return}const f=mcb;mx();if(f)f(v)}
+$("mi").addEventListener("keydown",e=>{if(e.key==="Enter")mok()});
+
+const firstD=()=>document.querySelector("#p0 .g4 input");
+function barangBaru(){
+  tanya("Barang baru","Nama barang, mis. Kardus","",n=>{
+    const it={id:uid++,nama:n,harga:"",det:[""],smode:"persen",sval:"",kena:true};
+    items.push(it);sel=it.id;draw();
+    setTimeout(()=>{const h=firstD();if(h)h.focus()},60);
+  });
+}
+function hapusBarang(){items=items.filter(x=>x.id!==sel);sel=items[0]?items[0].id:null;draw()}
+function setF(k,v){find(sel)[k]=v;calc()}
+function setD(j,v){find(sel).det[j]=v;calc()}
+function addD(){find(sel).det.push("");draw();const g=document.querySelectorAll("#p0 .g4 input");g[g.length-1].focus()}
+function dk(e,j){
+  if(e.key!=="Enter")return;e.preventDefault();
+  const it=find(sel),g=document.querySelectorAll("#p0 .g4 input");
+  if(j<it.det.length-1)g[j+1].focus();
+  else if(num(it.det[j])>0)addD();
+  else{const h=document.querySelector("#p0 [data-h]");if(h)h.focus()}
+}
+function delD(){const it=find(sel);if(it.det.length>1){it.det.pop();draw()}}
+function setMode(v){const it=find(sel);it.smode=v;it.sval="";draw()}
+function pilih(v){sel=+v;draw()}
+
+function draw(){
+  const add='<button style="width:100%" onclick="barangBaru()">+ Barang</button>';
+  const it=find(sel)||items[0];
+  if(!it){$("p0").innerHTML=add+'<div class="kosong"><b>Belum ada barang</b>Tekan + Barang di atas, lalu tulis nama barangnya</div>';calc();return}
+  sel=it.id;
+  const ac=saved.find(c=>c.id===active);
+  $("p0").innerHTML=add+`
+  <div class="card">
+    <div class="r"><select style="width:auto;flex:1" onchange="pilih(this.value)">${items.map((x,n)=>`<option value="${x.id}" ${x.id===sel?"selected":""}>${n+1}. ${esc(x.nama)}</option>`).join("")}</select>
+      <button class="ic" aria-label="Simpan" onclick="simpan()">💾</button>
+      <button class="ic x" aria-label="Hapus" onclick="arm(this,'Yakin?',hapusBarang)">🗑️</button></div>
+    <div class="l" style="margin:6px 0 0">${ac?"Catatan: "+esc(ac.nama):"Belum disimpan"}</div>
+    <label class="l">Rincian timbangan (Kg)</label>
+    <div class="g4">${it.det.map((v,j)=>`<input type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="Kg" value="${esc(v)}" oninput="setD(${j},this.value)" onkeydown="dk(event,${j})"/>`).join("")}<button class="mini" onclick="addD()">+ Rincian</button></div>
+    ${it.det.length>1?'<div class="r" style="justify-content:flex-end"><button class="mini" onclick="delD()">− Hapus rincian terakhir</button></div>':""}
+    <div class="g2">
+      <div><label class="l">Harga per Kg (Rp)</label>
+        <input type="text" inputmode="decimal" autocomplete="off" placeholder="1500" data-h="1" onkeydown="if(event.key==='Enter'){event.preventDefault();document.querySelector('#p0 [data-s]').focus()}" value="${esc(it.harga)}" oninput="setF('harga',this.value)"/></div>
+      <div><label class="l">Susut per Kg (opsional)</label>
+        <div class="r"><input type="text" inputmode="decimal" autocomplete="off" data-s="1" placeholder="${it.smode==="kg"?"Kg":"%"}" value="${esc(it.sval)}" oninput="setF('sval',this.value)"/>
+        <select style="width:62px" onchange="setMode(this.value)"><option value="persen" ${it.smode==="persen"?"selected":""}>%</option><option value="kg" ${it.smode==="kg"?"selected":""}>Kg</option></select></div></div>
+    </div>
+    <label class="cek"><input type="checkbox" ${it.kena?"checked":""} onchange="setF('kena',this.checked)"/>Kena susut harga akhir</label>
+  </div>`;
+  calc();
+}
+
+function calc(){
+  const t=totals();
+  const L=$("li");L.style.display=items.length?"":"none";
+  L.innerHTML='<div class="t">Sisa berat dan jumlah harga per barang</div>'+items.map((it,n)=>{
+    const r=hit(it);
+    return `<div class="lr"><div class="n"><b>${n+1}. ${esc(it.nama)}</b><small>${r.s>0?"susut "+fm(r.s)+" Kg ("+rp(r.sRp)+")":"tanpa susut"} · ${it.kena?"diambil potongan akhir":"bebas potongan akhir"}</small></div><div class="v"><b>${fm(r.akh)} Kg</b><small>${rp(r.hAkh)}</small></div></div>`;
+  }).join("");
+  $("tt").innerHTML=items.length?
+    `<span>Timbangan awal</span><b>${fm(t.kgAwal)} Kg</b>`+
+    (t.kgAwal-t.kgAkh>0?`<span>Total susut barang</span><b>${fm(t.kgAwal-t.kgAkh)} Kg · ${rp(t.sRp)}</b>`:"")+
+    `<span>Sisa timbangan</span><b>${fm(t.kgAkh)} Kg</b>`+
+    `<span>Harga barang kena susut</span><b>${rp(t.kena)}</b><span>Harga barang tidak kena</span><b>${rp(t.bebas)}</b>`+
+    `<span>Jumlah keduanya</span><b>${rp(t.kena+t.bebas)}</b>`+
+    (t.pot>0?`<span>Potongan susut akhir</span><b>-${rp(t.pot)}</b>`:""):
+    `<span>Belum ada barang</span><b></b>`;
+  $("av").placeholder=akhir.mode==="kg"?"Kg":"%";
+  lcd();
+}
+
+function teks(list,ak,d){
+  const jam=String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+  let t=`*TIMSAKER*\n_(Timbangan Sahabat Keringat)_\n${HR[d.getDay()]}, ${d.getDate()} ${BL[d.getMonth()]} ${d.getFullYear()} ${jam}\n━━━━━━━━━━━━━━━\n\n`;
+  list.forEach((it,i)=>{
+    const r=hit(it);
+    t+=`*${i+1}. ${it.nama}*${it.kena?"":" (bebas susut harga)"}\nRincian: ${it.det.map(num).filter(v=>v>0).join("Kg + ")}Kg\n`;
+    t+=`Total: ${fm(r.kg)}Kg × ${rp(r.h)} = ${rp(r.tot)}\n`;
+    if(r.s>0)t+=`Susut: ${it.sval}${it.smode==="kg"?"Kg":"%"} → -${fm(r.s)}Kg (${rp(r.sRp)})\n`;
+    t+=`Sisa timbangan: ${fm(r.akh)}Kg\nHarga akhir: ${rp(r.hAkh)}\n\n`;
+  });
+  const x=tot(list,ak);
+  t+=`━━━━━━━━━━━━━━━\n*TOTAL KESELURUHAN*\nTimbangan awal: ${fm(x.kgAwal)}Kg\n`;
+  if(x.kgAwal-x.kgAkh>0)t+=`Total susut barang: ${fm(x.kgAwal-x.kgAkh)}Kg (${rp(x.sRp)})\n`;
+  t+=`Sisa timbangan: ${fm(x.kgAkh)}Kg\n\nHarga barang kena susut akhir: ${rp(x.kena)}\nHarga barang tidak kena: ${rp(x.bebas)}\n`;
+  if(x.pot>0)t+=`Susut harga akhir: ${ak.val}${ak.mode==="kg"?"Kg":"%"} → -${rp(x.pot)}\n`;
+  return t+`\n*HASIL AKHIR: ${rp(x.hasil)}*`;
+}
+const waOf=c=>{if(!c.wa)c.wa=teks(c.items,c.akhir,new Date(c.ts||c.id));return c.wa};
+function copyText(t,done){
+  const fb=()=>{const a=document.createElement("textarea");a.value=t;a.style.cssText="position:fixed;opacity:0";document.body.appendChild(a);a.select();try{document.execCommand("copy");done()}catch(e){toast("Gagal menyalin")}a.remove()};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(done).catch(fb);else fb();
+}
+
+/* ---------- Simpan (tab Barang) ---------- */
+function now(){const w=new Date();return `${w.getDate()} ${BL[w.getMonth()].slice(0,3)} ${String(w.getHours()).padStart(2,"0")}:${String(w.getMinutes()).padStart(2,"0")}`}
+function simpan(){
+  if(!items.length){toast("Belum ada barang");return}
+  const ac=saved.find(c=>c.id===active);
+  if(ac){commit(ac.nama,ac.id);return}
+  let n=saved.length+1;while(saved.some(c=>c.nama.toLowerCase()==="transaksi "+n))n++;
+  tanya("Simpan catatan baru","Nama catatan","Transaksi "+n,nm=>{
+    let b=nm,k=2;while(saved.some(c=>c.nama.toLowerCase()===b.toLowerCase()))b=`${nm} (${k++})`;
+    commit(b,null);
+  });
+}
+function commit(nama,id){
+  const d=new Date();
+  const rec={id:id||Date.now(),nama,waktu:now(),ts:d.getTime(),items:clone(items),akhir:{...akhir}};
+  rec.wa=teks(rec.items,rec.akhir,d);
+  saved=saved.filter(c=>c.id!==rec.id);saved.unshift(rec);
+  active=rec.id;catSel=null;waSel=null;store();draw();
+  toast(id?"Catatan diperbarui":"Tersimpan di Catatan");
+}
+
+/* ---------- Tab Catatan ---------- */
+const optCat=(list,cur)=>list.map(c=>`<option value="${c.id}" ${c.id===cur?"selected":""}>${esc(c.nama)} · ${esc(c.waktu)}</option>`).join("");
+function pickCat(){if(!saved.find(c=>c.id===catSel))catSel=saved[0]?saved[0].id:null;return saved.find(c=>c.id===catSel)}
+function drawCat(){
+  const c=pickCat();
+  if(!c){$("p2").innerHTML='<div class="kosong"><b>Belum ada catatan</b>Tekan 💾 di tab Barang untuk menyimpan</div>';return}
+  const t=tot(c.items,c.akhir);
+  $("p2").innerHTML=`<div class="r"><select style="width:auto;flex:1" onchange="catSel=+this.value;drawCat()">${optCat(saved,c.id)}</select>
+    <button class="ic x" aria-label="Hapus catatan" onclick="arm(this,'Yakin?',()=>hapusCatatan(${c.id}))">🗑️</button></div>
+  <div class="card">
+    ${c.items.map((it,n)=>{const r=hit(it);return `<div class="lr"><div class="n"><b>${n+1}. ${esc(it.nama)}</b><small>${it.det.map(num).filter(v=>v>0).map(fm).join(" + ")} = ${fm(r.kg)} Kg × ${rp(r.h)}</small><small>${r.s>0?"susut "+fm(r.s)+" Kg":"tanpa susut"} · ${it.kena?"kena":"bebas"} potongan akhir</small></div><div class="v"><b>${fm(r.akh)} Kg</b><small>${rp(r.hAkh)}</small></div></div>`}).join("")}
+    <div class="hasil"><span>Sisa timbangan</span><b>${fm(t.kgAkh)} Kg</b><span>Jumlah harga</span><b>${rp(t.kena+t.bebas)}</b>${t.pot>0?`<span>Potongan susut akhir</span><b>-${rp(t.pot)}</b>`:""}<span>Hasil akhir</span><b class="g">${rp(t.hasil)}</b></div>
+  </div>
+  <button onclick="buka(${c.id})">Buka untuk diedit</button>`;
+}
+function hapusCatatan(id){saved=saved.filter(c=>c.id!==id);if(active===id)active=null;catSel=null;waSel=null;store();drawCat();draw()}
+function buka(id){
+  const c=saved.find(x=>x.id===id);if(!c)return;
+  items=clone(c.items);akhir={...c.akhir};
+  uid=Math.max(0,...items.map(x=>x.id))+1;sel=items[0]?items[0].id:null;active=id;
+  $("av").value=akhir.val;$("am").value=akhir.mode;
+  draw();show(0);toast(`Dibuka: ${c.nama}`);
+}
+function reset(){items=[];akhir={mode:"persen",val:""};uid=1;sel=null;active=null;$("av").value="";$("am").value="persen";draw();toast("Layar direset, Simpan berikutnya minta nama baru")}
+
+/* ---------- Tab WA ---------- */
+function pickWA(){if(!saved.find(c=>c.id===waSel))waSel=saved[0]?saved[0].id:null;return saved.find(c=>c.id===waSel)}
+function drawWA(){
+  const c=pickWA();
+  if(!c){$("p3").innerHTML='<div class="kosong"><b>Belum ada catatan</b>Simpan dulu dari tab Barang</div>';return}
+  $("p3").innerHTML=`<select onchange="waSel=+this.value;drawWA()">${optCat(saved,c.id)}</select>
+    <textarea id="wa" oninput="editWA(this.value)" placeholder="Teks WhatsApp bisa diedit di sini"></textarea>
+    <div class="r"><button class="mini" style="flex:1" onclick="arm(this,'Yakin?',regen)">Perbaharui</button><button class="wab" style="flex:1" onclick="salin()">Salin WhatsApp</button></div>`;
+  $("wa").value=waOf(c);
+}
+function editWA(v){const c=pickWA();if(c){c.wa=v;store()}}
+function regen(){const c=pickWA();if(!c)return;c.wa=teks(c.items,c.akhir,new Date(c.ts||c.id));store();$("wa").value=c.wa}
+function salin(){
+  if(!saved.length){toast("Belum ada catatan");return}
+  const cur=pickWA();
+  $("cl").innerHTML=saved.map(c=>`<label class="cek"><input type="checkbox" value="${c.id}" ${saved.length===1||c.id===cur.id?"checked":""}/><span><b>${esc(c.nama)}</b><br><small style="color:var(--mut)">${esc(c.waktu)}</small></span></label>`).join("");
+  $("mc").classList.add("on");
+}
+function mcx(){$("mc").classList.remove("on")}
+function mcok(){
+  const ids=[...document.querySelectorAll("#cl input:checked")].map(i=>+i.value);
+  if(!ids.length){toast("Pilih minimal satu catatan");return}
+  const t=saved.filter(c=>ids.includes(c.id)).reverse().map(waOf).join("\n\n═══════════════\n\n");
+  mcx();copyText(t,()=>toast(ids.length>1?`${ids.length} catatan tersalin`:"Tersalin, tinggal tempel di WhatsApp"));
+}
+
+draw();
+</script>
+</body>
+</html>
 
