@@ -23,7 +23,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 .b.on{background:var(--gold);color:#223}
 .b.big{width:62px;height:62px;font-size:1.5rem;background:var(--gold);color:#223;border:0}
 .vol{max-width:260px;margin:0 auto 8px}
-#st{margin:8px 0;padding:9px 12px;border-radius:10px;font-size:.84rem;background:rgba(255,255,255,.1)}
+#st{margin:8px 0;padding:9px 12px;border-radius:10px;font-size:.84rem;text-align:center;background:rgba(255,255,255,.1)}
 #st.ok{background:rgba(120,200,100,.22)}#st.err{background:rgba(220,90,80,.28)}
 label{display:block;text-align:center;font-size:.9rem;font-weight:700;color:var(--gold);margin:12px 0 6px}
 select{width:100%;text-align:center;text-align-last:center;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.35);color:#fff;font:inherit}
@@ -34,7 +34,7 @@ select option{background:#2b3a1d;color:#fff}
 <div class="card">
  <div class="ttl">🎵 Player Musik</div>
  <div class="disc" id="disc"><div class="dl">🎶</div></div>
- <div class="now" id="now">Memuat daftar lagu…</div>
+ <div class="now" id="now">…</div>
  <div class="sub" id="sub">&nbsp;</div>
  <div class="seek"><span id="tc">0:00</span><input type="range" id="seek" min="0" max="1000" value="0" aria-label="Posisi"><span id="td">0:00</span></div>
  <div class="btns">
@@ -45,7 +45,7 @@ select option{background:#2b3a1d;color:#fff}
   <button class="b" id="bRep" type="button" aria-label="Ulangi">🔁</button>
  </div>
  <div class="vol">🔈<input type="range" id="vol" min="0" max="100" value="85" aria-label="Volume">🔊</div>
- <div id="st">Memuat…</div>
+ <div id="st" class="info">Sedang Memuat Lagu</div>
  <label for="sel">Daftar Lagu</label>
  <select id="sel" aria-label="Pilih lagu"></select>
  <div style="margin-top:10px;text-align:center"><button class="btn" id="bRef" type="button">🔄 Segarkan</button></div>
@@ -61,7 +61,7 @@ const LISTFILE="Daftar-Lagu.txt";
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fmt=s=>{if(!isFinite(s)||s<0)return"0:00";s=Math.floor(s);return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")};
-function msg(t,c){const e=$("st");e.textContent=t;e.className=c||""}
+function msg(t,c){const e=$("st");e.textContent=t;e.className=c||"";e.style.display=t?"":"none"}
 
 function nameFrom(u){try{const s=new URL(u).pathname.split("/").filter(Boolean).pop()||u;return decodeURIComponent(s).replace(/\.[A-Za-z0-9]{2,5}$/,"").replace(/[_\-]+/g," ").trim()||"Lagu"}catch(e){return"Lagu"}}
 function mk(t,u){u=String(u||"").trim();if(/^:\/\//.test(u))u="https"+u;if(!u)return null;let url;
@@ -72,6 +72,9 @@ const parse=txt=>String(txt||"").split(/\r?\n/).map(s=>s.trim()).filter(s=>s&&s.
 let LIST=[],idx=-1,shuf=false,rep1=false,seeking=false,tried="";
 const audio=new Audio();audio.preload="metadata";audio.setAttribute("playsinline","");audio.volume=.85;
 const sel=$("sel");
+
+/* status: belum selesai = "Sedang Memuat Lagu"; sudah masuk = jumlah lagu */
+const info=()=>msg(LIST.length?"Player Ini Memuat "+LIST.length+" Lagu":"","ok");
 
 function setPlaying(on){$("disc").classList.toggle("on",!!on);$("bPlay").textContent=on?"⏸":"▶"}
 function fillSel(txt){sel.innerHTML=LIST.length?LIST.map((m,i)=>'<option value="'+i+'">'+(i+1)+". "+esc(m.t)+"</option>").join(""):'<option value="">'+esc(txt||"(daftar kosong)")+"</option>";if(idx>=0&&idx<LIST.length)sel.value=idx}
@@ -118,7 +121,7 @@ async function viaBlob(m){
   audio._u=URL.createObjectURL(new Blob([buf],{type:k.mime}));audio.src=audio._u;audio.load();await audio.play();
  }catch(e){if(e&&e.name!=="AbortError")msg("❌ Gagal memutar ("+((e&&e.name)||"error")+"). Berkas mp3 mungkin rusak.","err")}}
 
-audio.addEventListener("play",()=>{setPlaying(true);msg("▶ Sedang memutar","ok")});
+audio.addEventListener("play",()=>{setPlaying(true);info()});
 audio.addEventListener("pause",()=>setPlaying(false));
 audio.addEventListener("ended",()=>{if(rep1){audio.currentTime=0;audio.play().catch(()=>{})}else next(1)});
 audio.addEventListener("error",()=>{if(!audio.getAttribute("src"))return;setPlaying(false);const m=LIST[idx];
@@ -132,8 +135,8 @@ sk.addEventListener("input",()=>{seeking=true;const d=audio.duration;if(d>0)$("t
 sk.addEventListener("change",()=>{const d=audio.duration;if(d>0)audio.currentTime=sk.value/1000*d;seeking=false});
 $("vol").addEventListener("input",e=>{audio.volume=e.target.value/100});
 $("bPlay").onclick=toggle;$("bPrev").onclick=()=>next(-1);$("bNext").onclick=()=>next(1);
-$("bShuf").onclick=()=>{shuf=!shuf;$("bShuf").classList.toggle("on",shuf);msg(shuf?"Acak aktif":"Acak mati","info")};
-$("bRep").onclick=()=>{rep1=!rep1;$("bRep").classList.toggle("on",rep1);msg(rep1?"Ulangi lagu ini: aktif":"Ulangi lagu ini: mati","info")};
+$("bShuf").onclick=()=>{shuf=!shuf;$("bShuf").classList.toggle("on",shuf)};
+$("bRep").onclick=()=>{rep1=!rep1;$("bRep").classList.toggle("on",rep1)};
 sel.addEventListener("change",()=>{if(sel.value!=="")load(+sel.value,true)});
 try{if("mediaSession" in navigator){navigator.mediaSession.setActionHandler("previoustrack",()=>next(-1));navigator.mediaSession.setActionHandler("nexttrack",()=>next(1))}}catch(e){}
 
@@ -141,21 +144,22 @@ try{if("mediaSession" in navigator){navigator.mediaSession.setActionHandler("pre
 let lastLoad=0,busy=false,sig="";
 async function muat(first,manual){
  const now=Date.now();if(busy||(!first&&now-lastLoad<5000))return;busy=true;lastLoad=now;
- if(first)fillSel("Memuat daftar lagu…");
+ if(first||manual)msg("Sedang Memuat Lagu","info");
+ if(first)fillSel("Sedang Memuat Lagu");
  let list=null,err="❌ Gagal memuat "+LISTFILE+". Periksa koneksi internet.";
  try{const r=await fetch(BASE+LISTFILE+"?t="+now,{cache:"no-store"});
   if(r.ok)list=parse(await r.text());else err="❌ Berkas "+LISTFILE+" tidak ditemukan (status "+r.status+"). Pastikan namanya persis dan ada di repositori Mp3."}catch(e){}
  busy=false;
  if(list===null){if(first||!LIST.length){fillSel("(gagal memuat daftar)");$("now").textContent="Daftar lagu tidak terbaca";msg(err,"err")}else if(manual)msg(err,"err");return}
  const s=list.map(m=>m.t+"|"+m.url).join("\n");
- if(!first&&s===sig){if(manual)msg("✅ Daftar sudah terbaru ("+LIST.length+" lagu).","ok");return}
+ if(!first&&s===sig){if(manual)info();return}
  sig=s;const cur=idx>=0&&LIST[idx]?LIST[idx].url:"";LIST=list;
  if(!LIST.length){idx=-1;fillSel("(daftar kosong)");$("now").textContent="Daftar lagu kosong";msg("Isi "+LISTFILE+" dengan format: Judul | link","err");return}
  const k=LIST.findIndex(m=>m.url===cur);
  if(k>=0){idx=k;fillSel();$("sub").textContent="Lagu "+(k+1)+" dari "+LIST.length}
  else if(audio.paused){idx=-1;fillSel();load(0,false)}
  else{idx=-1;fillSel()}
- msg(first?"✅ "+LIST.length+" lagu dimuat dari "+LISTFILE+". Ketuk ▶ untuk memutar.":"🔄 Daftar diperbarui: "+LIST.length+" lagu.","ok")}
+ info()}
 muat(true);
 /* Muat ulang otomatis: saat halaman/kotak player tampil lagi (misalnya setelah login), saat kembali ke tab, dan tiap 2 menit */
 const seg=()=>{if(!document.hidden)muat(false)};
@@ -164,7 +168,7 @@ try{new IntersectionObserver(es=>{if(es.some(e=>e.isIntersecting))seg()}).observ
 window.addEventListener("message",e=>{const d=e.data;if(d==="refresh-player"||(d&&d.type==="refresh-player")){lastLoad=0;muat(false)}});
 window.refreshPlayer=()=>{lastLoad=0;muat(false,true)};
 setInterval(seg,120000);
-$("bRef").onclick=()=>{lastLoad=0;muat(false,true);msg("Menyegarkan daftar…","info")};
+$("bRef").onclick=()=>{lastLoad=0;muat(false,true)};
 })();
 </script>
 </body></html>
