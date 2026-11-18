@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Player Musik Team Keringat</title>
+<style>
+:root{--gold:#f5d76e;--mu:rgba(255,255,255,.72)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font:15px/1.5 'Segoe UI',Tahoma,Arial,sans-serif;color:#fff;background:radial-gradient(circle at 50% 0,#4d6633,#2b3a1d 60%,#1d2813);padding:14px;min-height:100vh}
+.card{max-width:460px;margin:0 auto;background:rgba(0,0,0,.24);border:1px solid rgba(255,255,255,.22);border-radius:22px;padding:16px;box-shadow:0 12px 34px #0006}
+.ttl{font-weight:800;color:var(--gold)}
+.disc{width:170px;height:170px;margin:14px auto 8px;border-radius:50%;background:repeating-radial-gradient(circle,#111 0 3px,#1c1c1c 3px 6px);box-shadow:0 10px 26px #000a;display:flex;align-items:center;justify-content:center;animation:spin 7s linear infinite;animation-play-state:paused}
+.disc.on{animation-play-state:running}
+.dl{width:64px;height:64px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:#223}
+@keyframes spin{to{transform:rotate(360deg)}}
+.now{text-align:center;font-size:1.1rem;font-weight:700;overflow-wrap:anywhere}
+.sub{text-align:center;color:var(--mu);font-size:.8rem;margin-bottom:8px}
+.seek,.vol{display:flex;align-items:center;gap:8px;font-size:.75rem;color:var(--mu)}
+.seek span{min-width:36px;text-align:center}
+input[type=range]{-webkit-appearance:none;appearance:none;flex:1;height:6px;border-radius:4px;background:rgba(255,255,255,.28);outline:0}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--gold)}
+input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--gold);border:0}
+.btns{display:flex;justify-content:center;align-items:center;gap:12px;margin:12px 0 8px}
+.b{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);color:#fff;border-radius:50%;width:46px;height:46px;font-size:1.1rem;cursor:pointer}
+.b.on{background:var(--gold);color:#223}
+.b.big{width:62px;height:62px;font-size:1.5rem;background:var(--gold);color:#223;border:0}
+.vol{max-width:260px;margin:0 auto 8px}
+#st{margin:8px 0;padding:9px 12px;border-radius:10px;font-size:.84rem;background:rgba(255,255,255,.1)}
+#st.ok{background:rgba(120,200,100,.22)}#st.err{background:rgba(220,90,80,.28)}
+label{display:block;text-align:center;font-size:.9rem;font-weight:700;color:var(--gold);margin:12px 0 6px}
+select{width:100%;text-align:center;text-align-last:center;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.35);color:#fff;font:inherit}
+select option{background:#2b3a1d;color:#fff}
+.btn{background:#4f6b32;border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:10px;padding:10px 14px;font:inherit;font-weight:600;cursor:pointer}
+</style></head><body>
+
+<div class="card">
+ <div class="ttl">🎵 Player Musik</div>
+ <div class="disc" id="disc"><div class="dl">🎶</div></div>
+ <div class="now" id="now">Memuat daftar lagu…</div>
+ <div class="sub" id="sub">&nbsp;</div>
+ <div class="seek"><span id="tc">0:00</span><input type="range" id="seek" min="0" max="1000" value="0" aria-label="Posisi"><span id="td">0:00</span></div>
+ <div class="btns">
+  <button class="b" id="bShuf" type="button" aria-label="Acak">🔀</button>
+  <button class="b" id="bPrev" type="button" aria-label="Sebelumnya">⏮</button>
+  <button class="b big" id="bPlay" type="button" aria-label="Putar atau jeda">▶</button>
+  <button class="b" id="bNext" type="button" aria-label="Berikutnya">⏭</button>
+  <button class="b" id="bRep" type="button" aria-label="Ulangi">🔁</button>
+ </div>
+ <div class="vol">🔈<input type="range" id="vol" min="0" max="100" value="85" aria-label="Volume">🔊</div>
+ <div id="st">Memuat…</div>
+ <label for="sel">Daftar Lagu</label>
+ <select id="sel" aria-label="Pilih lagu"></select>
+ <div style="margin-top:10px;text-align:center"><button class="btn" id="bRef" type="button">🔄 Segarkan</button></div>
+</div>
+
+<script>
+(function(){
+"use strict";
+/* Daftar lagu HANYA dibaca dari berkas ini (format tiap baris: Judul | link) */
+const BASE="https://teamkeringat.github.io/Mp3/";
+const LISTFILE="Daftar-Lagu.txt";
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt=s=>{if(!isFinite(s)||s<0)return"0:00";s=Math.floor(s);return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")};
+function msg(t,c){const e=$("st");e.textContent=t;e.className=c||""}
+
+function nameFrom(u){try{const s=new URL(u).pathname.split("/").filter(Boolean).pop()||u;return decodeURIComponent(s).replace(/\.[A-Za-z0-9]{2,5}$/,"").replace(/[_\-]+/g," ").trim()||"Lagu"}catch(e){return"Lagu"}}
+function mk(t,u){u=String(u||"").trim();if(/^:\/\//.test(u))u="https"+u;if(!u)return null;let url;
+ if(/^https:\/\//i.test(u))url=u;else if(/^[^\s\/:\\|]+\.[A-Za-z0-9]{2,5}$/.test(u))url=BASE+encodeURIComponent(u);else return null;
+ t=String(t||"").replace(/\|/g,"-").trim()||nameFrom(url);return{t:t.slice(0,80),u:u,url:url}}
+const parse=txt=>String(txt||"").split(/\r?\n/).map(s=>s.trim()).filter(s=>s&&s.charAt(0)!=="#").map(s=>{const i=s.lastIndexOf("|");return i<0?mk("",s):mk(s.slice(0,i),s.slice(i+1))}).filter(Boolean).slice(0,300);
+
+let LIST=[],idx=-1,shuf=false,rep1=false,seeking=false,tried="";
+const audio=new Audio();audio.preload="metadata";audio.setAttribute("playsinline","");audio.volume=.85;
+const sel=$("sel");
+
+function setPlaying(on){$("disc").classList.toggle("on",!!on);$("bPlay").textContent=on?"⏸":"▶"}
+function fillSel(txt){sel.innerHTML=LIST.length?LIST.map((m,i)=>'<option value="'+i+'">'+(i+1)+". "+esc(m.t)+"</option>").join(""):'<option value="">'+esc(txt||"(daftar kosong)")+"</option>";if(idx>=0&&idx<LIST.length)sel.value=idx}
+
+function load(i,auto){
+ if(!LIST.length)return;
+ idx=((i%LIST.length)+LIST.length)%LIST.length;const m=LIST[idx];fillSel();tried="";audio._info="";
+ $("now").textContent=m.t;$("sub").textContent="Lagu "+(idx+1)+" dari "+LIST.length;
+ $("seek").value=0;$("tc").textContent="0:00";$("td").textContent="0:00";
+ audio.src=m.url;audio.load();
+ if(auto){const p=audio.play();if(p&&p.catch)p.catch(playErr)}
+ try{if("mediaSession" in navigator)navigator.mediaSession.metadata=new MediaMetadata({title:m.t,artist:"Team Keringat"})}catch(e){}
+}
+function playErr(e){const m=LIST[idx];if(!e||e.name==="AbortError")return;
+ if(e.name==="NotAllowedError"){msg("Ketuk ▶ untuk memutar.","info");return}
+ if(m&&e.name==="NotSupportedError")viaBlob(m);else msg("❌ Gagal memutar ("+e.name+").","err")}
+function next(d){if(!LIST.length)return;if(shuf&&LIST.length>1){let r;do{r=Math.floor(Math.random()*LIST.length)}while(r===idx);load(r,true)}else load(idx+d,true)}
+function toggle(){if(!LIST.length)return;if(idx<0){load(0,true);return}
+ if(audio.paused){const p=audio.play();if(p&&p.catch)p.catch(playErr)}else audio.pause()}
+
+/* kenali isi berkas dari bytes awalnya */
+function sniff(u){
+ const t=(i,n)=>String.fromCharCode.apply(null,Array.from(u.slice(i,i+n)));
+ if(u.length<200)return{bad:"berkas terlalu kecil ("+u.length+" byte), unggahan gagal atau isinya teks"};
+ if(t(0,3)==="ID3"||(u[0]===0xFF&&(u[1]&0xE0)===0xE0))return{mime:"audio/mpeg"};
+ if(t(4,4)==="ftyp")return{mime:"audio/mp4"};
+ if(t(0,4)==="RIFF")return{mime:"audio/wav"};
+ if(t(0,4)==="OggS")return{mime:"audio/ogg"};
+ if(t(0,4)==="fLaC")return{mime:"audio/flac"};
+ if(u[0]===0x1A&&u[1]===0x45&&u[2]===0xDF&&u[3]===0xA3)return{mime:"audio/webm"};
+ const h=t(0,20).trim();
+ if(h.charAt(0)==="<"||/^version https/.test(h))return{bad:"isinya teks/HTML, bukan audio"};
+ return{mime:"audio/mpeg"}}
+/* cara cadangan: unduh lalu putar dengan jenis berkas yang tepat */
+async function viaBlob(m){
+ if(tried===m.url)return;tried=m.url;msg("Mencoba cara lain, mohon tunggu…","info");
+ try{
+  const r=await fetch(m.url,{cache:"no-store"});
+  if(!r.ok){msg("❌ Berkas tidak ditemukan di GitHub (status "+r.status+"). Periksa nama berkas: "+m.u,"err");return}
+  const buf=await r.arrayBuffer(),k=sniff(new Uint8Array(buf));
+  if(k.bad){msg("❌ "+m.t+": "+k.bad+".","err");return}
+  audio._info=k.mime+", "+Math.round(buf.byteLength/1024)+" KB";
+  if(audio._u)URL.revokeObjectURL(audio._u);
+  audio._u=URL.createObjectURL(new Blob([buf],{type:k.mime}));audio.src=audio._u;audio.load();await audio.play();
+ }catch(e){if(e&&e.name!=="AbortError")msg("❌ Gagal memutar ("+((e&&e.name)||"error")+"). Berkas mp3 mungkin rusak.","err")}}
+
+audio.addEventListener("play",()=>{setPlaying(true);msg("▶ Sedang memutar","ok")});
+audio.addEventListener("pause",()=>setPlaying(false));
+audio.addEventListener("ended",()=>{if(rep1){audio.currentTime=0;audio.play().catch(()=>{})}else next(1)});
+audio.addEventListener("error",()=>{if(!audio.getAttribute("src"))return;setPlaying(false);const m=LIST[idx];
+ if(m&&tried!==m.url){viaBlob(m);return}
+ const c=audio.error?audio.error.code:0;
+ msg("❌ Berkas tidak bisa diputar (kode "+c+(audio._info?", "+audio._info:"")+"). Kemungkinan berkas rusak atau bukan MP3 asli.","err")});
+audio.addEventListener("loadedmetadata",()=>{$("td").textContent=fmt(audio.duration)});
+audio.addEventListener("timeupdate",()=>{if(seeking)return;const d=audio.duration;$("tc").textContent=fmt(audio.currentTime);if(d>0)$("seek").value=Math.round(audio.currentTime/d*1000)});
+const sk=$("seek");
+sk.addEventListener("input",()=>{seeking=true;const d=audio.duration;if(d>0)$("tc").textContent=fmt(sk.value/1000*d)});
+sk.addEventListener("change",()=>{const d=audio.duration;if(d>0)audio.currentTime=sk.value/1000*d;seeking=false});
+$("vol").addEventListener("input",e=>{audio.volume=e.target.value/100});
+$("bPlay").onclick=toggle;$("bPrev").onclick=()=>next(-1);$("bNext").onclick=()=>next(1);
+$("bShuf").onclick=()=>{shuf=!shuf;$("bShuf").classList.toggle("on",shuf);msg(shuf?"Acak aktif":"Acak mati","info")};
+$("bRep").onclick=()=>{rep1=!rep1;$("bRep").classList.toggle("on",rep1);msg(rep1?"Ulangi lagu ini: aktif":"Ulangi lagu ini: mati","info")};
+sel.addEventListener("change",()=>{if(sel.value!=="")load(+sel.value,true)});
+try{if("mediaSession" in navigator){navigator.mediaSession.setActionHandler("previoustrack",()=>next(-1));navigator.mediaSession.setActionHandler("nexttrack",()=>next(1))}}catch(e){}
+
+/* ---- muat daftar lagu dari Daftar-Lagu.txt (tanpa data lain, tanpa simpanan di perangkat) ---- */
+let lastLoad=0,busy=false,sig="";
+async function muat(first,manual){
+ const now=Date.now();if(busy||(!first&&now-lastLoad<5000))return;busy=true;lastLoad=now;
+ if(first)fillSel("Memuat daftar lagu…");
+ let list=null,err="❌ Gagal memuat "+LISTFILE+". Periksa koneksi internet.";
+ try{const r=await fetch(BASE+LISTFILE+"?t="+now,{cache:"no-store"});
+  if(r.ok)list=parse(await r.text());else err="❌ Berkas "+LISTFILE+" tidak ditemukan (status "+r.status+"). Pastikan namanya persis dan ada di repositori Mp3."}catch(e){}
+ busy=false;
+ if(list===null){if(first||!LIST.length){fillSel("(gagal memuat daftar)");$("now").textContent="Daftar lagu tidak terbaca";msg(err,"err")}else if(manual)msg(err,"err");return}
+ const s=list.map(m=>m.t+"|"+m.url).join("\n");
+ if(!first&&s===sig){if(manual)msg("✅ Daftar sudah terbaru ("+LIST.length+" lagu).","ok");return}
+ sig=s;const cur=idx>=0&&LIST[idx]?LIST[idx].url:"";LIST=list;
+ if(!LIST.length){idx=-1;fillSel("(daftar kosong)");$("now").textContent="Daftar lagu kosong";msg("Isi "+LISTFILE+" dengan format: Judul | link","err");return}
+ const k=LIST.findIndex(m=>m.url===cur);
+ if(k>=0){idx=k;fillSel();$("sub").textContent="Lagu "+(k+1)+" dari "+LIST.length}
+ else if(audio.paused){idx=-1;fillSel();load(0,false)}
+ else{idx=-1;fillSel()}
+ msg(first?"✅ "+LIST.length+" lagu dimuat dari "+LISTFILE+". Ketuk ▶ untuk memutar.":"🔄 Daftar diperbarui: "+LIST.length+" lagu.","ok")}
+muat(true);
+/* Muat ulang otomatis: saat halaman/kotak player tampil lagi (misalnya setelah login), saat kembali ke tab, dan tiap 2 menit */
+const seg=()=>{if(!document.hidden)muat(false)};
+document.addEventListener("visibilitychange",seg);window.addEventListener("focus",seg);window.addEventListener("pageshow",seg);
+try{new IntersectionObserver(es=>{if(es.some(e=>e.isIntersecting))seg()}).observe(document.querySelector(".card"))}catch(e){}
+window.addEventListener("message",e=>{const d=e.data;if(d==="refresh-player"||(d&&d.type==="refresh-player")){lastLoad=0;muat(false)}});
+window.refreshPlayer=()=>{lastLoad=0;muat(false,true)};
+setInterval(seg,120000);
+$("bRef").onclick=()=>{lastLoad=0;muat(false,true);msg("Menyegarkan daftar…","info")};
+})();
+</script>
+</body></html>
