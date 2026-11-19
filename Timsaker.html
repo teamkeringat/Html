@@ -75,6 +75,30 @@ nav button{border-bottom-width:3px}
 .cl{max-height:50vh;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
 .cl .cek{margin-top:6px}
 #wa{min-height:160px}
+
+/* ===================== PENAMBAHAN VERSI BARU =====================
+   (ditaruh paling bawah supaya menimpa aturan lama tanpa mengubahnya) */
+
+/* 1) ANTI-REFRESH & SCROLL LANCAR
+   overscroll-behavior:none  -> menarik layar ke bawah saat sudah di paling atas TIDAK memicu "tarik untuk refresh" browser.
+   overscroll-behavior:contain -> gulungan di dalam kotak (daftar, rincian, isi catatan) tidak "menular" ke halaman/induknya.
+   100dvh -> tinggi mengikuti layar HP yang sebenarnya (bar alamat browser naik-turun tidak membuat tampilan loncat). */
+html,body{height:100%;height:100dvh;overscroll-behavior:none}
+.pn,.g4,.li,.cl,.cbody{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+
+/* 2) TAB CATATAN: 3 lapis. Atas (dropdown+hapus) dan bawah (3 tombol) DIAM, hanya isi tengah yang menggulung. */
+.pn.fix{overflow:hidden;gap:6px}
+.pn.fix>.r,.pn.fix>.bar3{flex:none}
+.cbody{flex:1;min-height:0;overflow-y:auto;padding-bottom:2px}
+.bar3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.bar3 button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;background:var(--in);color:var(--txt);border:1px solid var(--line);border-bottom-width:3px}
+
+/* 3) TOMBOL SIMBOL. .sy = simbol besar, .cap = keterangan kecil di bawah simbol.
+   Mau simbol murni tanpa tulisan? Cukup tambahkan:  .cap{display:none}  */
+.sy{font-size:18px;line-height:1}
+.cap{font-size:10px;font-weight:600;color:inherit;opacity:.85}
+nav button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:6px 0}
+.ic:disabled{opacity:.4}
 </style>
 </head>
 <body>
@@ -91,21 +115,40 @@ nav button{border-bottom-width:3px}
         <div class="r"><input id="av" type="text" inputmode="decimal" autocomplete="off" oninput="akhir.val=this.value;calc()">
           <select id="am" onchange="akhir.mode=this.value;akhir.val='';$('av').value='';calc()"><option value="persen">%</option><option value="kg">Kg</option></select></div>
       </div>
-      <button class="x" onclick="arm(this,'Yakin hapus semua?',reset)">Reset layar</button>
+      <button class="x" onclick="arm(this,'Yakin hapus semua?',reset)">🔄 Transaksi Baru</button>
     </section>
-    <section id="p2" class="pn"></section>
+    <!-- Tab Catatan: #ctop (atas, diam) - #cbody (tengah, menggulung) - .bar3 (bawah, diam) -->
+    <section id="p2" class="pn fix">
+      <div class="r" id="ctop"></div>
+      <div class="cbody" id="cbody"></div>
+      <div class="bar3">
+        <button onclick="cadangan()" aria-label="Cadangan" title="Simpan cadangan (txt / json)"><span class="sy">💾</span><span class="cap">Cadangan</span></button>
+        <button onclick="pulihkan()" aria-label="Pulihkan" title="Tarik kembali cadangan"><span class="sy">📂</span><span class="cap">Pulihkan</span></button>
+        <button onclick="bukaEdit()" aria-label="Buka Edit" title="Buka catatan untuk diedit"><span class="sy">✏️</span><span class="cap">Buka Edit</span></button>
+      </div>
+    </section>
     <section id="p3" class="pn"></section>
   </main>
   <nav>
-    <button class="on" onclick="show(0)">Barang</button>
-    <button onclick="show(1)">Total</button>
-    <button onclick="show(2)">Catatan</button>
-    <button onclick="show(3)">WA</button>
+    <button class="on" onclick="show(0)" aria-label="Barang"><span class="sy">📦</span><span class="cap">Barang</span></button>
+    <button onclick="show(1)" aria-label="Total"><span class="sy">🧮</span><span class="cap">Total</span></button>
+    <button onclick="show(2)" aria-label="Catatan"><span class="sy">📒</span><span class="cap">Catatan</span></button>
+    <button onclick="show(3)" aria-label="Salin WA"><span class="sy">💬</span><span class="cap">WA</span></button>
   </nav>
 </div>
 <div id="toast"></div>
 <div class="mo" id="mo"><div class="mb"><h3 id="mt"></h3><input id="mi" type="text" autocomplete="off"><div class="r"><button class="mini" style="flex:1" onclick="mx()">Batal</button><button style="flex:1" onclick="mok()">OK</button></div></div></div>
-<div class="mo" id="mc"><div class="mb"><h3>Salin catatan mana saja?</h3><div class="cl" id="cl"></div><div class="r"><button class="mini" style="flex:1" onclick="mcx()">Batal</button><button class="wab" style="flex:1" onclick="mcok()">Salin</button></div></div></div>
+<div class="mo" id="mc"><div class="mb"><h3>Salin catatan mana saja?</h3><div class="cl" id="cl"></div><div class="r"><button class="mini sy" style="flex:1" onclick="mcx()" aria-label="Batal">✖️</button><button class="wab sy" style="flex:1" onclick="mcok()" aria-label="Salin">📋</button></div></div></div>
+
+<!-- Dialog ✏️ Ubah Barang (nama + no susunan) -->
+<div class="mo" id="me"><div class="mb"><h3>✏️ Ubah Barang</h3>
+  <div><label class="l" for="en" style="margin-top:0">Nama barang</label><input id="en" type="text" autocomplete="off"></div>
+  <div><label class="l" for="eno" style="margin-top:0">No susunan</label><input id="eno" type="text" inputmode="numeric" autocomplete="off"></div>
+  <div class="r"><button class="mini" style="flex:1" onclick="mex()">Batal</button><button style="flex:1" onclick="meok()">OK</button></div></div></div>
+<!-- Dialog pilihan serbaguna (format cadangan, mode pulihkan) -->
+<div class="mo" id="mp"><div class="mb"><h3 id="pt"></h3><div id="pb" style="display:flex;flex-direction:column;gap:8px"></div><button class="mini sy" onclick="px()" aria-label="Batal">✖️</button></div></div>
+<!-- Pemilih berkas tersembunyi untuk 📂 Pulihkan -->
+<input type="file" id="fl" accept=".json,.txt,application/json,text/plain" style="display:none" onchange="baca(this)">
 
 <script>
 const $=id=>document.getElementById(id);
@@ -198,6 +241,7 @@ function setMode(v){const it=find(sel);it.smode=v;it.sval="";draw()}
 function pilih(v){sel=+v;draw()}
 
 function draw(){
+  const st=$("p0").scrollTop; /* ingat posisi gulungan supaya tidak loncat ke atas saat layar digambar ulang */
   const add='<button style="width:100%" onclick="barangBaru()">+ Barang</button>';
   const it=find(sel)||items[0];
   if(!it){$("p0").innerHTML=add+'<div class="kosong"><b>Belum ada barang</b>Tekan + Barang di atas, lalu tulis nama barangnya</div>';calc();return}
@@ -206,12 +250,13 @@ function draw(){
   $("p0").innerHTML=add+`
   <div class="card">
     <div class="r"><select style="width:auto;flex:1" onchange="pilih(this.value)">${items.map((x,n)=>`<option value="${x.id}" ${x.id===sel?"selected":""}>${n+1}. ${esc(x.nama)}</option>`).join("")}</select>
+      <button class="ic" aria-label="Ubah nama dan no susunan barang" title="Ubah nama / no susunan" onclick="ubah()">✏️</button>
       <button class="ic" aria-label="Simpan" onclick="simpan()">💾</button>
       <button class="ic x" aria-label="Hapus" onclick="arm(this,'Yakin?',hapusBarang)">🗑️</button></div>
     <div class="l" style="margin:6px 0 0">${ac?"Catatan: "+esc(ac.nama):"Belum disimpan"}</div>
     <label class="l">Rincian timbangan (Kg)</label>
-    <div class="g4">${it.det.map((v,j)=>`<input type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="Kg" value="${esc(v)}" oninput="setD(${j},this.value)" onkeydown="dk(event,${j})"/>`).join("")}<button class="mini" onclick="addD()">+ Rincian</button></div>
-    ${it.det.length>1?'<div class="r" style="justify-content:flex-end"><button class="mini" onclick="delD()">− Hapus rincian terakhir</button></div>':""}
+    <div class="g4">${it.det.map((v,j)=>`<input type="text" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="Kg" value="${esc(v)}" oninput="setD(${j},this.value)" onkeydown="dk(event,${j})"/>`).join("")}<button class="mini" style="font-size:11px" onclick="addD()">+ Rincian</button></div>
+    ${it.det.length>1?'<div class="r" style="justify-content:flex-end"><button class="mini" onclick="delD()" aria-label="Hapus rincian terakhir">➖</button></div>':""}
     <div class="g2">
       <div><label class="l">Harga per Kg (Rp)</label>
         <input type="text" inputmode="decimal" autocomplete="off" placeholder="1500" data-h="1" onkeydown="if(event.key==='Enter'){event.preventDefault();document.querySelector('#p0 [data-s]').focus()}" value="${esc(it.harga)}" oninput="setF('harga',this.value)"/></div>
@@ -221,6 +266,7 @@ function draw(){
     </div>
     <label class="cek"><input type="checkbox" ${it.kena?"checked":""} onchange="setF('kena',this.checked)"/>Kena susut harga akhir</label>
   </div>`;
+  $("p0").scrollTop=st;
   calc();
 }
 
@@ -267,7 +313,7 @@ function copyText(t,done){
 }
 
 /* ---------- Simpan (tab Barang) ---------- */
-function now(){const w=new Date();return `${w.getDate()} ${BL[w.getMonth()].slice(0,3)} ${String(w.getHours()).padStart(2,"0")}:${String(w.getMinutes()).padStart(2,"0")}`}
+function now(w=new Date()){return `${w.getDate()} ${BL[w.getMonth()].slice(0,3)} ${String(w.getHours()).padStart(2,"0")}:${String(w.getMinutes()).padStart(2,"0")}`}
 function simpan(){
   if(!items.length){toast("Belum ada barang");return}
   const ac=saved.find(c=>c.id===active);
@@ -291,16 +337,22 @@ function commit(nama,id){
 const optCat=(list,cur)=>list.map(c=>`<option value="${c.id}" ${c.id===cur?"selected":""}>${esc(c.nama)} · ${esc(c.waktu)}</option>`).join("");
 function pickCat(){if(!saved.find(c=>c.id===catSel))catSel=saved[0]?saved[0].id:null;return saved.find(c=>c.id===catSel)}
 function drawCat(){
+  /* Menggambar tab Catatan. Atas (#ctop) dan isi (#cbody) digambar terpisah,
+     jadi baris dropdown + 🗑️ tidak pernah ikut tergulung. */
   const c=pickCat();
-  if(!c){$("p2").innerHTML='<div class="kosong"><b>Belum ada catatan</b>Tekan 💾 di tab Barang untuk menyimpan</div>';return}
+  if(!c){
+    $("ctop").innerHTML='<select disabled style="width:auto;flex:1"><option>Belum ada catatan</option></select><button class="ic x" disabled aria-label="Hapus catatan">🗑️</button>';
+    $("cbody").innerHTML='<div class="kosong"><b>Belum ada catatan</b>Tekan 💾 di tab Barang untuk menyimpan, atau 📂 untuk memulihkan cadangan</div>';
+    return;
+  }
   const t=tot(c.items,c.akhir);
-  $("p2").innerHTML=`<div class="r"><select style="width:auto;flex:1" onchange="catSel=+this.value;drawCat()">${optCat(saved,c.id)}</select>
-    <button class="ic x" aria-label="Hapus catatan" onclick="arm(this,'Yakin?',()=>hapusCatatan(${c.id}))">🗑️</button></div>
-  <div class="card">
+  $("ctop").innerHTML=`<select style="width:auto;flex:1" onchange="catSel=+this.value;drawCat()">${optCat(saved,c.id)}</select>
+    <button class="ic x" aria-label="Hapus catatan" onclick="arm(this,'Yakin?',()=>hapusCatatan(${c.id}))">🗑️</button>`;
+  $("cbody").innerHTML=`<div class="card">
     ${c.items.map((it,n)=>{const r=hit(it);return `<div class="lr"><div class="n"><b>${n+1}. ${esc(it.nama)}</b><small>${it.det.map(num).filter(v=>v>0).map(fm).join(" + ")} = ${fm(r.kg)} Kg × ${rp(r.h)}</small><small>${r.s>0?"susut "+fm(r.s)+" Kg":"tanpa susut"} · ${it.kena?"kena":"bebas"} potongan akhir</small></div><div class="v"><b>${fm(r.akh)} Kg</b><small>${rp(r.hAkh)}</small></div></div>`}).join("")}
     <div class="hasil"><span>Sisa timbangan</span><b>${fm(t.kgAkh)} Kg</b><span>Jumlah harga</span><b>${rp(t.kena+t.bebas)}</b>${t.pot>0?`<span>Potongan susut akhir</span><b>-${rp(t.pot)}</b>`:""}<span>Hasil akhir</span><b class="g">${rp(t.hasil)}</b></div>
-  </div>
-  <button onclick="buka(${c.id})">Buka untuk diedit</button>`;
+  </div>`;
+  $("cbody").scrollTop=0;
 }
 function hapusCatatan(id){saved=saved.filter(c=>c.id!==id);if(active===id)active=null;catSel=null;waSel=null;store();drawCat();draw()}
 function buka(id){
@@ -319,7 +371,7 @@ function drawWA(){
   if(!c){$("p3").innerHTML='<div class="kosong"><b>Belum ada catatan</b>Simpan dulu dari tab Barang</div>';return}
   $("p3").innerHTML=`<select onchange="waSel=+this.value;drawWA()">${optCat(saved,c.id)}</select>
     <textarea id="wa" oninput="editWA(this.value)" placeholder="Teks WhatsApp bisa diedit di sini"></textarea>
-    <div class="r"><button class="mini" style="flex:1" onclick="arm(this,'Yakin?',regen)">Perbaharui</button><button class="wab" style="flex:1" onclick="salin()">Salin WhatsApp</button></div>`;
+    <div class="r"><button class="mini" style="flex:1" onclick="arm(this,'Yakin?',regen)" aria-label="Perbaharui teks">🔄</button><button class="wab" style="flex:1" onclick="salin()" aria-label="Salin WhatsApp">📋 WA</button></div>`;
   $("wa").value=waOf(c);
 }
 function editWA(v){const c=pickWA();if(c){c.wa=v;store()}}
@@ -338,8 +390,116 @@ function mcok(){
   mcx();copyText(t,()=>toast(ids.length>1?`${ids.length} catatan tersalin`:"Tersalin, tinggal tempel di WhatsApp"));
 }
 
+/* =====================================================================
+   FITUR BARU
+   ===================================================================== */
+
+/* ---------- ✏️ Ubah nama & no susunan barang (tab Barang, kiri 💾) ----------
+   Berlaku untuk barang yang sedang terpilih. Nomor susunan = urutan barang
+   di dropdown / Total / teks WA. Mengubah nomor = memindahkan barang ke urutan itu.
+   Perubahan langsung terlihat di layar; tekan 💾 untuk menyimpannya ke catatan. */
+function ubah(){
+  const it=find(sel);if(!it){toast("Belum ada barang");return}
+  $("en").value=it.nama;
+  $("eno").value=items.indexOf(it)+1;
+  $("me").classList.add("on");
+  setTimeout(()=>{$("en").focus();$("en").select()},80);
+}
+function mex(){$("me").classList.remove("on")}
+function meok(){
+  const it=find(sel);if(!it){mex();return}
+  const nm=$("en").value.trim();
+  if(!nm){toast("Nama barang tidak boleh kosong");return}
+  it.nama=nm;
+  let p=parseInt($("eno").value,10);
+  if(isNaN(p))p=items.indexOf(it)+1;                 // kosong/salah ketik -> urutan tetap
+  p=Math.max(1,Math.min(p,items.length));            // dibatasi 1 .. jumlah barang
+  items.splice(items.indexOf(it),1);                 // cabut dari tempat lama
+  items.splice(p-1,0,it);                            // sisipkan di urutan baru
+  mex();draw();toast("Diubah. Tekan 💾 untuk menyimpan");
+}
+["en","eno"].forEach(i=>$(i).addEventListener("keydown",e=>{if(e.key==="Enter")meok()}));
+
+/* ---------- ✏️ Buka Edit (tab Catatan) ----------
+   Membuka catatan terpilih ke tab Barang (fungsi buka() yang sudah ada).
+   Di sana semua data, nama barang, dan no susunan bisa diubah, lalu 💾 memperbarui catatan yang sama. */
+function bukaEdit(){const c=pickCat();if(!c){toast("Belum ada catatan");return}buka(c.id)}
+
+/* ---------- Dialog pilihan serbaguna ----------
+   pilihan("Judul",[["label",fungsi],...]) menampilkan tombol-tombol pilihan. */
+function pilihan(j,opsi){
+  $("pt").textContent=j;
+  const b=$("pb");b.innerHTML="";
+  opsi.forEach(([lb,fn])=>{const x=document.createElement("button");x.textContent=lb;x.onclick=()=>{px();fn()};b.appendChild(x)});
+  $("mp").classList.add("on");
+}
+function px(){$("mp").classList.remove("on")}
+
+/* ---------- 💾 Cadangan ----------
+   Menyimpan SEMUA catatan jadi satu berkas .json atau .txt (isinya sama: teks JSON,
+   jadi keduanya bisa dipulihkan). Nama berkas memuat tanggal. */
+function cadangan(){
+  if(!saved.length){toast("Belum ada catatan untuk dicadangkan");return}
+  pilihan("Simpan cadangan sebagai",[["{ }  JSON",()=>unduh("json")],["📄  TXT",()=>unduh("txt")]]);
+}
+function unduh(ext){
+  const d=new Date(),p=n=>String(n).padStart(2,"0");
+  const data=JSON.stringify({app:"TIMSAKER",versi:2,dibuat:d.toISOString(),catatan:saved},null,2);
+  const nama=`TIMSAKER-cadangan-${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}.${ext}`;
+  const blob=new Blob([data],{type:ext==="json"?"application/json":"text/plain"});
+  const u=URL.createObjectURL(blob),a=document.createElement("a");
+  a.href=u;a.download=nama;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(u),4000);
+  toast(`Cadangan ${saved.length} catatan diunduh`);
+}
+
+/* ---------- 📂 Pulihkan ----------
+   Pilih berkas cadangan (.json/.txt) -> dibaca -> dibersihkan (bersih) -> pilih
+   Gabungkan (catatan yang belum ada ditambah, yang id-nya sama diganti isi cadangan)
+   atau Ganti semua (catatan sekarang dihapus, diganti isi cadangan). */
+function pulihkan(){$("fl").value="";$("fl").click()}
+function baca(inp){
+  const f=inp.files&&inp.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{
+    let arr;
+    try{const j=JSON.parse(r.result);arr=Array.isArray(j)?j:j.catatan}
+    catch(e){toast("Berkas bukan cadangan yang valid");return}
+    if(!Array.isArray(arr)){toast("Isi cadangan tidak dikenali");return}
+    const ok=arr.map(bersih).filter(Boolean);
+    if(!ok.length){toast("Tidak ada catatan di berkas ini");return}
+    pilihan(`${ok.length} catatan ditemukan`,[["➕  Gabungkan",()=>terap(ok,false)],["♻️  Ganti semua",()=>terap(ok,true)]]);
+  };
+  r.onerror=()=>toast("Gagal membaca berkas");
+  r.readAsText(f);
+}
+/* Memeriksa & merapikan satu catatan dari berkas, agar berkas rusak/aneh tidak merusak aplikasi. */
+function bersih(c){
+  if(!c||typeof c!=="object"||!Array.isArray(c.items))return null;
+  const S=v=>v==null?"":String(v);
+  let n=1;
+  const its=c.items.filter(x=>x&&typeof x==="object").map(x=>({
+    id:n++,nama:S(x.nama)||"Barang",harga:S(x.harga),
+    det:Array.isArray(x.det)&&x.det.length?x.det.map(S):[""],
+    smode:x.smode==="kg"?"kg":"persen",sval:S(x.sval),kena:x.kena!==false}));
+  if(!its.length)return null;
+  const ak=c.akhir&&typeof c.akhir==="object"?c.akhir:{};
+  const ts=Number(c.ts)||Date.now();
+  const r={id:Number(c.id)||ts,nama:S(c.nama)||"Catatan",waktu:S(c.waktu)||now(new Date(ts)),ts,items:its,
+    akhir:{mode:ak.mode==="kg"?"kg":"persen",val:S(ak.val)}};
+  if(typeof c.wa==="string")r.wa=c.wa;
+  return r;
+}
+function terap(ok,ganti){
+  if(ganti)saved=[];
+  ok.forEach(c=>{saved=saved.filter(x=>x.id!==c.id);saved.push(c)});
+  saved.sort((a,b)=>b.ts-a.ts);                      // terbaru di atas, sama seperti saat Simpan
+  if(!saved.find(c=>c.id===active))active=null;
+  catSel=null;waSel=null;store();drawCat();draw();
+  toast(`${ok.length} catatan dipulihkan`);
+}
+
 draw();
 </script>
 </body>
 </html>
-
