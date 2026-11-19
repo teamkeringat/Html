@@ -142,7 +142,7 @@ nav button{display:flex;flex-direction:column;align-items:center;justify-content
       <div class="bar3">
         <button onclick="cadangan()" aria-label="Cadangan" title="Simpan cadangan (txt / json)"><span class="sy">💾</span><span class="cap">Cadangan</span></button>
         <button onclick="pulihkan()" aria-label="Pulihkan" title="Tarik kembali cadangan"><span class="sy">📂</span><span class="cap">Pulihkan</span></button>
-        <button onclick="bukaEdit()" aria-label="Buka Edit" title="Buka catatan untuk diedit"><span class="sy">✏️</span><span class="cap">Buka Edit</span></button>
+        <button onclick="bukaEdit()" aria-label="Edit" title="Edit catatan yang dipilih"><span class="sy">✏️</span><span class="cap">Edit</span></button>
       </div>
     </section>
     <section id="p3" class="pn"></section>
@@ -204,6 +204,16 @@ const find=id=>items.find(x=>x.id===id);
 
 let tab=0;
 function lcd(){
+  /* Tab Catatan: layar atas mengikuti catatan yang dipilih di dropdown (bukan data di tab Barang). */
+  if(tab===2){
+    const cc=pickCat();
+    if(!cc){$("d1").textContent="Belum ada catatan";$("d2").textContent="";$("d4").textContent="";$("d3").textContent="Rp 0";return}
+    const tc=tot(cc.items,cc.akhir),hc=rp(tc.hasil);
+    $("d1").textContent=`${cc.nama} · ${cc.items.length} barang · akhir ${fm(tc.kgAkh)} Kg`;
+    $("d2").textContent=rp(tc.kena+tc.bebas)+(tc.pot>0?` − ${rp(tc.pot)}`:"");
+    $("d4").textContent=`Susut ${fm(tc.kgAwal-tc.kgAkh)} Kg (${rp(tc.sRp)})`;
+    $("d3").textContent=hc;$("d3").style.fontSize=hc.length>13?"24px":"30px";return;
+  }
   const t=totals(),it=find(sel);
   let a="",b="",c="Rp 0",e="";
   if(!items.length){a="Belum ada barang"}
@@ -367,7 +377,7 @@ function drawCat(){
   if(!c){
     $("ctop").innerHTML='<select disabled style="width:auto;flex:1"><option>Belum ada catatan</option></select><button class="ic x" disabled aria-label="Hapus catatan">🗑️</button>';
     $("cbody").innerHTML='<div class="kosong"><b>Belum ada catatan</b>Tekan 💾 di tab Barang untuk menyimpan, atau 📂 untuk memulihkan cadangan</div>';
-    return;
+    lcd();return;
   }
   const t=tot(c.items,c.akhir);
   $("ctop").innerHTML=`<select style="width:auto;flex:1" onchange="catSel=+this.value;drawCat()">${optCat(saved,c.id)}</select>
@@ -376,7 +386,7 @@ function drawCat(){
     ${c.items.map((it,n)=>{const r=hit(it);return `<div class="lr"><div class="n"><b>${n+1}. ${esc(it.nama)}</b><small>${it.det.map(num).filter(v=>v>0).map(fm).join(" + ")} = ${fm(r.kg)} Kg × ${rp(r.h)}</small><small>${r.s>0?"susut "+fm(r.s)+" Kg":"tanpa susut"} · ${it.kena?"kena":"bebas"} potongan akhir</small></div><div class="v"><b>${fm(r.akh)} Kg</b><small>${rp(r.hAkh)}</small></div></div>`}).join("")}
     <div class="hasil"><span>Sisa timbangan</span><b>${fm(t.kgAkh)} Kg</b><span>Jumlah harga</span><b>${rp(t.kena+t.bebas)}</b>${t.pot>0?`<span>Potongan susut akhir</span><b>-${rp(t.pot)}</b>`:""}<span>Hasil akhir</span><b class="g">${rp(t.hasil)}</b></div>
   </div>`;
-  $("cbody").scrollTop=0;
+  $("cbody").scrollTop=0;lcd();
 }
 function hapusCatatan(id){saved=saved.filter(c=>c.id!==id);if(active===id)active=null;catSel=null;waSel=null;store();drawCat();draw()}
 function hapusPilih(){
@@ -398,7 +408,7 @@ function mdok(){
 function buka(id){
   const c=saved.find(x=>x.id===id);if(!c)return;
   items=clone(c.items);akhir={...c.akhir};
-  uid=Math.max(0,...items.map(x=>x.id))+1;sel=items[0]?items[0].id:null;active=id;
+  uid=Math.max(0,...items.map(x=>x.id))+1;sel=items[0]?items[0].id:null;active=id;catSel=id;
   $("av").value=akhir.val;$("am").value=akhir.mode;
   draw();show(0);toast(`Dibuka: ${c.nama}`);
 }
@@ -460,7 +470,9 @@ function meok(){
 }
 ["en","eno"].forEach(i=>$(i).addEventListener("keydown",e=>{if(e.key==="Enter")meok()}));
 
-/* ---------- ✏️ Buka Edit (tab Catatan) ----------
+/* ---------- ✏️ Edit (tab Catatan) ----------
+   Dropdown catatan TIDAK perlu menunggu Edit: begitu dipilih, isi catatan langsung tampil di bawahnya.
+   Tombol Edit hanya untuk mengubah catatan yang sedang dipilih.
    Membuka catatan terpilih ke tab Barang (fungsi buka() yang sudah ada).
    Di sana semua data, nama barang, dan no susunan bisa diubah, lalu 💾 memperbarui catatan yang sama. */
 function bukaEdit(){const c=pickCat();if(!c){toast("Belum ada catatan");return}buka(c.id)}
