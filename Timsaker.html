@@ -99,6 +99,11 @@ html,body{height:100%;height:100dvh;overscroll-behavior:none}
 .cap{font-size:10px;font-weight:600;color:inherit;opacity:.85}
 nav button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:6px 0}
 .ic:disabled{opacity:.4}
+
+/* 4) KOTAK JUMLAH HARGA di kanan "Kena susut harga akhir" (tab Barang): latar sama seperti kotak isian lain, tulisan kuning; isinya sama dengan angka besar di layar atas untuk barang terpilih. Judul kecil "Jumlah Harga" ada di atasnya. */
+.hk{flex:none;min-width:100px;display:flex;align-items:center;justify-content:flex-end;padding:9px 10px;border-radius:8px;border:1px solid var(--line);background:var(--in);color:#facc15;font-weight:800;font-size:14px;white-space:nowrap}
+/* 5) KOTAK JUMLAH HARGA TOTAL di kanan "Susut harga akhir" (tab Total): latar & garis sama dengan isian Susut (hijau tosca), tulisan kuning tebal, judul kecil di atasnya. */
+.hkt{background:#0b1f1e;border-color:#2dd4bf;font-weight:900}
 </style>
 </head>
 <body>
@@ -112,8 +117,9 @@ nav button{display:flex;flex-direction:column;align-items:center;justify-content
       <div class="tot">
         <div class="hasil" id="tt"></div>
         <label class="l">Susut harga akhir (dari barang yang kena)</label>
-        <div class="r"><input id="av" type="text" inputmode="decimal" autocomplete="off" oninput="akhir.val=this.value;calc()">
-          <select id="am" onchange="akhir.mode=this.value;akhir.val='';$('av').value='';calc()"><option value="persen">%</option><option value="kg">Kg</option></select></div>
+        <div class="r" style="align-items:flex-end"><input id="av" type="text" inputmode="decimal" autocomplete="off" oninput="akhir.val=this.value;calc()">
+          <select id="am" onchange="akhir.mode=this.value;akhir.val='';$('av').value='';calc()"><option value="persen">%</option><option value="kg">Kg</option></select>
+          <div style="flex:none"><div class="l" style="margin:0 0 3px;text-align:right">Jumlah Harga Total</div><div class="hk hkt" id="hkt">Rp 0</div></div></div>
       </div>
       <button class="x" onclick="arm(this,'Yakin hapus semua?',reset)">🔄 Transaksi Baru</button>
     </section>
@@ -264,7 +270,7 @@ function draw(){
         <div class="r"><input type="text" inputmode="decimal" autocomplete="off" data-s="1" placeholder="${it.smode==="kg"?"Kg":"%"}" value="${esc(it.sval)}" oninput="setF('sval',this.value)"/>
         <select style="width:62px" onchange="setMode(this.value)"><option value="persen" ${it.smode==="persen"?"selected":""}>%</option><option value="kg" ${it.smode==="kg"?"selected":""}>Kg</option></select></div></div>
     </div>
-    <label class="cek"><input type="checkbox" ${it.kena?"checked":""} onchange="setF('kena',this.checked)"/>Kena susut harga akhir</label>
+    <div class="r" style="align-items:center;margin-top:8px"><label class="cek" style="margin-top:0;flex:1;min-width:0"><input type="checkbox" ${it.kena?"checked":""} onchange="setF('kena',this.checked)"/>Kena susut harga akhir</label><div style="flex:none"><div class="l" style="margin:0 0 3px;text-align:right">Jumlah Harga</div><div class="hk" id="hk">Rp 0</div></div></div>
   </div>`;
   $("p0").scrollTop=st;
   calc();
@@ -286,6 +292,11 @@ function calc(){
     (t.pot>0?`<span>Potongan susut akhir</span><b>-${rp(t.pot)}</b>`:""):
     `<span>Belum ada barang</span><b></b>`;
   $("av").placeholder=akhir.mode==="kg"?"Kg":"%";
+  /* kotak jumlah harga di samping "Kena susut harga akhir" (tab Barang) = angka besar di layar atas untuk barang terpilih */
+  const hk=$("hk"),si=find(sel);
+  if(hk&&si){const hv=rp(hit(si).hAkh);hk.textContent=hv;hk.style.fontSize=hv.length>13?"12px":"14px"}
+  /* kotak Jumlah Harga Total di tab Total = hasil akhir (sama dengan angka besar di layar atas) */
+  const hkt=$("hkt");if(hkt){const tv=rp(t.hasil);hkt.textContent=tv;hkt.style.fontSize=tv.length>13?"12px":"14px"}
   lcd();
 }
 
