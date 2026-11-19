@@ -156,6 +156,7 @@ nav button{display:flex;flex-direction:column;align-items:center;justify-content
 </div>
 <div id="toast"></div>
 <div class="mo" id="mo"><div class="mb"><h3 id="mt"></h3><input id="mi" type="text" autocomplete="off"><div class="r"><button class="mini" style="flex:1" onclick="mx()">Batal</button><button style="flex:1" onclick="mok()">OK</button></div></div></div>
+<div class="mo" id="md"><div class="mb"><h3>Hapus catatan mana saja?</h3><div class="cl" id="dl"></div><div class="r"><button class="mini" style="flex:1" onclick="mdx()">Batal</button><button style="flex:1;background:#dc2626" onclick="mdok()">Hapus</button></div></div></div>
 <div class="mo" id="mc"><div class="mb"><h3>Salin catatan mana saja?</h3><div class="cl" id="cl"></div><div class="r"><button class="mini" style="flex:1" onclick="mcx()">Batal</button><button class="wab" style="flex:1" onclick="mcok()">Salin</button></div></div></div>
 
 <!-- Dialog ✏️ Ubah Barang (nama + no susunan) -->
@@ -370,7 +371,7 @@ function drawCat(){
   }
   const t=tot(c.items,c.akhir);
   $("ctop").innerHTML=`<select style="width:auto;flex:1" onchange="catSel=+this.value;drawCat()">${optCat(saved,c.id)}</select>
-    <button class="ic x" aria-label="Hapus catatan" onclick="arm(this,'Yakin?',()=>hapusCatatan(${c.id}))">🗑️</button>`;
+    <button class="ic x" aria-label="Hapus catatan" onclick="hapusPilih()">🗑️</button>`;
   $("cbody").innerHTML=`<div class="card">
     ${c.items.map((it,n)=>{const r=hit(it);return `<div class="lr"><div class="n"><b>${n+1}. ${esc(it.nama)}</b><small>${it.det.map(num).filter(v=>v>0).map(fm).join(" + ")} = ${fm(r.kg)} Kg × ${rp(r.h)}</small><small>${r.s>0?"susut "+fm(r.s)+" Kg":"tanpa susut"} · ${it.kena?"kena":"bebas"} potongan akhir</small></div><div class="v"><b>${fm(r.akh)} Kg</b><small>${rp(r.hAkh)}</small></div></div>`}).join("")}
     <div class="hasil"><span>Sisa timbangan</span><b>${fm(t.kgAkh)} Kg</b><span>Jumlah harga</span><b>${rp(t.kena+t.bebas)}</b>${t.pot>0?`<span>Potongan susut akhir</span><b>-${rp(t.pot)}</b>`:""}<span>Hasil akhir</span><b class="g">${rp(t.hasil)}</b></div>
@@ -378,6 +379,22 @@ function drawCat(){
   $("cbody").scrollTop=0;
 }
 function hapusCatatan(id){saved=saved.filter(c=>c.id!==id);if(active===id)active=null;catSel=null;waSel=null;store();drawCat();draw()}
+function hapusPilih(){
+  if(!saved.length){toast("Belum ada catatan");return}
+  const cur=pickCat();
+  $("dl").innerHTML=saved.map(c=>`<label class="cek"><input type="checkbox" value="${c.id}" ${cur&&c.id===cur.id?"checked":""}/><span><b>${esc(c.nama)}</b><br><small style="color:var(--mut)">${esc(c.waktu)}</small></span></label>`).join("");
+  $("md").classList.add("on");
+}
+function mdx(){$("md").classList.remove("on")}
+function mdok(){
+  const ids=[...document.querySelectorAll("#dl input:checked")].map(i=>+i.value);
+  if(!ids.length){toast("Pilih minimal satu catatan");return}
+  mdx();
+  saved=saved.filter(c=>!ids.includes(c.id));
+  if(!saved.find(c=>c.id===active))active=null;
+  catSel=null;waSel=null;store();drawCat();draw();
+  toast(ids.length>1?`${ids.length} catatan dihapus`:"Catatan dihapus");
+}
 function buka(id){
   const c=saved.find(x=>x.id===id);if(!c)return;
   items=clone(c.items);akhir={...c.akhir};
@@ -385,7 +402,7 @@ function buka(id){
   $("av").value=akhir.val;$("am").value=akhir.mode;
   draw();show(0);toast(`Dibuka: ${c.nama}`);
 }
-function reset(){items=[];akhir={mode:"persen",val:""};uid=1;sel=null;active=null;$("av").value="";$("am").value="persen";draw();toast("Layar direset, Simpan berikutnya minta nama baru")}
+function reset(){items=[];akhir={mode:"persen",val:""};uid=1;sel=null;active=null;$("av").value="";$("am").value="persen";draw();show(0);toast("Layar direset, Simpan berikutnya minta nama baru")}
 
 /* ---------- Tab WA ---------- */
 function pickWA(){if(!saved.find(c=>c.id===waSel))waSel=saved[0]?saved[0].id:null;return saved.find(c=>c.id===waSel)}
