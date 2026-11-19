@@ -146,7 +146,7 @@ nav button{display:flex;flex-direction:column;align-items:center;justify-content
   <div><label class="l" for="eno" style="margin-top:0">No susunan</label><input id="eno" type="text" inputmode="numeric" autocomplete="off"></div>
   <div class="r"><button class="mini" style="flex:1" onclick="mex()">Batal</button><button style="flex:1" onclick="meok()">OK</button></div></div></div>
 <!-- Dialog pilihan serbaguna (format cadangan, mode pulihkan) -->
-<div class="mo" id="mp"><div class="mb"><h3 id="pt"></h3><div id="pb" style="display:flex;flex-direction:column;gap:8px"></div><button class="mini sy" onclick="px()" aria-label="Batal">✖️</button></div></div>
+<div class="mo" id="mp"><div class="mb"><h3 id="pt"></h3><div id="pb" style="display:flex;flex-direction:column;gap:8px"></div><button class="mini" onclick="px()">Batal</button></div></div>
 <!-- Pemilih berkas tersembunyi untuk 📂 Pulihkan -->
 <input type="file" id="fl" accept=".json,.txt,application/json,text/plain" style="display:none" onchange="baca(this)">
 
@@ -371,7 +371,7 @@ function drawWA(){
   if(!c){$("p3").innerHTML='<div class="kosong"><b>Belum ada catatan</b>Simpan dulu dari tab Barang</div>';return}
   $("p3").innerHTML=`<select onchange="waSel=+this.value;drawWA()">${optCat(saved,c.id)}</select>
     <textarea id="wa" oninput="editWA(this.value)" placeholder="Teks WhatsApp bisa diedit di sini"></textarea>
-    <div class="r"><button class="mini" style="flex:1" onclick="arm(this,'Yakin?',regen)" aria-label="Perbaharui teks">🔄</button><button class="wab" style="flex:1" onclick="salin()" aria-label="Salin WhatsApp">📋 WA</button></div>`;
+    <div class="r"><button class="mini" style="flex:1" onclick="arm(this,'Yakin?',regen)" >🔄 Segarkan</button><button class="wab" style="flex:1" onclick="salin()">📋 Salin</button></div>`;
   $("wa").value=waOf(c);
 }
 function editWA(v){const c=pickWA();if(c){c.wa=v;store()}}
