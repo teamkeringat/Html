@@ -84,7 +84,19 @@ nav button{border-bottom-width:3px}
    overscroll-behavior:contain -> gulungan di dalam kotak (daftar, rincian, isi catatan) tidak "menular" ke halaman/induknya.
    100dvh -> tinggi mengikuti layar HP yang sebenarnya (bar alamat browser naik-turun tidak membuat tampilan loncat). */
 html,body{height:100%;height:100dvh;overscroll-behavior:none}
-.pn,.g4,.li,.cl,.cbody{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+/* Panel utama & isi catatan: gulungan berhenti di ujung (tidak menarik halaman / refresh).
+   Kotak kecil di dalam panel (rincian, daftar barang, daftar salin) SENGAJA dibiarkan menyambung ke panel induk,
+   supaya saat jari mulai dari kotak kecil itu gulungan tidak "macet". */
+.pn,.cbody{overscroll-behavior:contain}
+.g4,.li,.cl{overscroll-behavior:auto}
+.pn,.g4,.li,.cl,.cbody{-webkit-overflow-scrolling:touch}
+.app{touch-action:pan-y}
+
+/* 1b) ANTI-REFRESH APLIKASI (WebView/APK): halaman dibuat lebih tinggi 2px dari layar dan diposisikan 2px dari atas (lihat fungsi kunci() di JS).
+   Dengan begitu Android menganggap halaman "tidak di paling atas", jadi gerakan jari tidak memicu tarik-untuk-refresh. */
+html{overflow-y:auto}
+body{height:calc(100% + 2px);height:calc(100dvh + 2px)}
+.app{height:calc(100% - 2px);height:100dvh}
 
 /* 2) TAB CATATAN: 3 lapis. Atas (dropdown+hapus) dan bawah (3 tombol) DIAM, hanya isi tengah yang menggulung. */
 .pn.fix{overflow:hidden;gap:6px}
@@ -509,6 +521,43 @@ function terap(ok,ganti){
   catSel=null;waSel=null;store();drawCat();draw();
   toast(`${ok.length} catatan dipulihkan`);
 }
+
+/* ---------- ANTI-REFRESH (cadangan untuk browser yang mengabaikan overscroll-behavior) ----------
+   Cara kerja: setiap jari menggeser layar, dicari kotak yang masih bisa digulung ke arah itu.
+   - Ada & belum mentok  -> biarkan, gulungan normal (halus).
+   - Sudah mentok di atas/bawah, atau tidak ada yang bisa digulung -> gerakan dibatalkan,
+     jadi halaman tidak ikut tertarik dan browser tidak me-refresh. */
+(function(){
+  let ly=0;
+  document.addEventListener("touchstart",e=>{ly=e.touches[0].clientY},{passive:true});
+  document.addEventListener("touchmove",e=>{
+    if(e.touches.length>1)return;
+    const y=e.touches[0].clientY,dy=y-ly;ly=y;
+    if(!dy)return;
+    let el=e.target;
+    while(el&&el!==document.body&&el!==document.documentElement){
+      if(el.scrollHeight>el.clientHeight+1){
+        const oy=getComputedStyle(el).overflowY;
+        if(oy==="auto"||oy==="scroll"){
+          const atTop=el.scrollTop<=0,atBot=el.scrollTop+el.clientHeight>=el.scrollHeight-1;
+          if(!((dy>0&&atTop)||(dy<0&&atBot)))return;   // masih bisa digulung ke arah ini
+        }
+      }
+      el=el.parentElement;
+    }
+    if(e.cancelable)e.preventDefault();
+  },{passive:false});
+})();
+
+/* ---------- ANTI-REFRESH UNTUK APLIKASI (WebView) ----------
+   Aplikasi pembungkus (APK) punya "tarik untuk refresh" milik Android yang aktif selama HALAMAN berada di posisi paling atas.
+   Gulungan di dalam kotak (daftar catatan, panel) tidak dihitung. Karena halaman ini memang tidak pernah bergulir,
+   refresh muncul di setiap tarikan jari ke bawah. Solusinya: halaman dibuat lebih tinggi 2px (lihat CSS) dan selalu
+   dikembalikan ke posisi 2px dari atas oleh kunci(), sehingga dianggap "bukan di paling atas" dan refresh tidak aktif.
+   Catatan: ini juga melindungi data di layar yang belum disimpan agar tidak hilang karena refresh tidak sengaja. */
+function kunci(){if(window.scrollY<2)window.scrollTo(0,2)}
+["scroll","resize","orientationchange","pageshow","focusin","focusout","load"].forEach(ev=>window.addEventListener(ev,()=>setTimeout(kunci,0),{passive:true}));
+kunci();
 
 draw();
 </script>
