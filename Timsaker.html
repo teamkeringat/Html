@@ -166,6 +166,7 @@ nav button{display:flex;flex-direction:column;align-items:center;justify-content
   <div class="r"><button class="mini" style="flex:1" onclick="mex()">Batal</button><button style="flex:1" onclick="meok()">OK</button></div></div></div>
 <!-- Dialog pilihan serbaguna (format cadangan, mode pulihkan) -->
 <div class="mo" id="mp"><div class="mb"><h3 id="pt"></h3><div id="pb" style="display:flex;flex-direction:column;gap:8px"></div><button class="mini" onclick="px()">Batal</button></div></div>
+<div class="mo" id="mpst"><div class="mb"><h3>Tempel teks cadangan</h3><textarea id="pst" rows="7" style="font-family:monospace;font-size:12px" placeholder="Tempel isi cadangan di sini"></textarea><div class="r"><button class="mini" style="flex:1" onclick="$('mpst').classList.remove('on')">Batal</button><button style="flex:1" onclick="pstOk()">Pulihkan</button></div></div></div>
 <!-- Pemilih berkas tersembunyi untuk 📂 Pulihkan -->
 <input type="file" id="fl" accept=".json,.txt,application/json,text/plain" style="display:none" onchange="baca(this)">
 
@@ -320,7 +321,7 @@ function calc(){
   if(hk&&si){const hv=rp(hit(si).hAkh);hk.textContent=hv;hk.style.fontSize=hv.length>13?"12px":"14px"}
   /* kotak Jumlah Harga Total di tab Total = hasil akhir (sama dengan angka besar di layar atas) */
   const hkt=$("hkt");if(hkt){const tv=rp(t.hasil);hkt.textContent=tv;hkt.style.fontSize=tv.length>13?"12px":"14px"}
-  lcd();
+  lcd();simpanDraf();
 }
 
 function teks(list,ak,d){
@@ -492,38 +493,54 @@ function px(){$("mp").classList.remove("on")}
    jadi keduanya bisa dipulihkan). Nama berkas memuat tanggal. */
 function cadangan(){
   if(!saved.length){toast("Belum ada catatan untuk dicadangkan");return}
-  pilihan("Simpan cadangan sebagai",[["{ }  JSON",()=>unduh("json")],["📄  TXT",()=>unduh("txt")]]);
+  pilihan("Simpan cadangan sebagai",[["{ }  JSON",()=>unduh("json")],["📄  TXT",()=>unduh("txt")],["📋  Salin teks cadangan",()=>salinCad()]]);
 }
+const dataCad=()=>JSON.stringify({app:"Data Timbangan",versi:2,dibuat:new Date().toISOString(),catatan:saved},null,2);
+function namaCad(ext){const d=new Date(),p=n=>String(n).padStart(2,"0");return `Data Timbangan ${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}.${ext}`}
+function salinCad(){copyText(dataCad(),()=>toast("Teks cadangan tersalin, tempel & simpan di tempat aman"))}
 function unduh(ext){
-  const d=new Date(),p=n=>String(n).padStart(2,"0");
-  const data=JSON.stringify({app:"TIMSAKER",versi:2,dibuat:d.toISOString(),catatan:saved},null,2);
-  const nama=`TIMSAKER-cadangan-${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}.${ext}`;
-  const blob=new Blob([data],{type:ext==="json"?"application/json":"text/plain"});
-  const u=URL.createObjectURL(blob),a=document.createElement("a");
-  a.href=u;a.download=nama;document.body.appendChild(a);a.click();a.remove();
-  setTimeout(()=>URL.revokeObjectURL(u),4000);
-  toast(`Cadangan ${saved.length} catatan diunduh`);
+  const data=dataCad(),nama=namaCad(ext),mime=ext==="json"?"application/json":"text/plain";
+  const ok=()=>toast(`Cadangan ${saved.length} catatan disimpan`);
+  const klasik=()=>{
+    try{
+      const blob=new Blob([data],{type:mime}),u=URL.createObjectURL(blob),a=document.createElement("a");
+      a.href=u;a.download=nama;a.style.display="none";document.body.appendChild(a);a.click();
+      setTimeout(()=>{a.remove();URL.revokeObjectURL(u)},4000);ok();
+    }catch(e){salinCad()}
+  };
+  try{
+    const f=new File([data],nama,{type:mime});
+    if(navigator.canShare&&navigator.canShare({files:[f]})){
+      navigator.share({files:[f],title:"Data Timbangan"}).then(ok).catch(e=>{if(e&&e.name==="AbortError")return;klasik()});
+      return;
+    }
+  }catch(e){}
+  klasik();
 }
 
 /* ---------- 📂 Pulihkan ----------
    Pilih berkas cadangan (.json/.txt) -> dibaca -> dibersihkan (bersih) -> pilih
    Gabungkan (catatan yang belum ada ditambah, yang id-nya sama diganti isi cadangan)
    atau Ganti semua (catatan sekarang dihapus, diganti isi cadangan). */
-function pulihkan(){$("fl").value="";$("fl").click()}
+function pulihkan(){
+  pilihan("Pulihkan cadangan dari",[["📂  Pilih berkas",()=>{$("fl").value="";$("fl").click()}],["📋  Tempel teks cadangan",()=>{$("pst").value="";$("mpst").classList.add("on");setTimeout(()=>$("pst").focus(),80)}]]);
+}
+function pstOk(){const v=$("pst").value;$("mpst").classList.remove("on");proses(v)}
 function baca(inp){
   const f=inp.files&&inp.files[0];if(!f)return;
   const r=new FileReader();
-  r.onload=()=>{
-    let arr;
-    try{const j=JSON.parse(r.result);arr=Array.isArray(j)?j:j.catatan}
-    catch(e){toast("Berkas bukan cadangan yang valid");return}
-    if(!Array.isArray(arr)){toast("Isi cadangan tidak dikenali");return}
-    const ok=arr.map(bersih).filter(Boolean);
-    if(!ok.length){toast("Tidak ada catatan di berkas ini");return}
-    pilihan(`${ok.length} catatan ditemukan`,[["➕  Gabungkan",()=>terap(ok,false)],["♻️  Ganti semua",()=>terap(ok,true)]]);
-  };
+  r.onload=()=>proses(r.result);
   r.onerror=()=>toast("Gagal membaca berkas");
   r.readAsText(f);
+}
+function proses(txt){
+  let arr;
+  try{const j=JSON.parse(String(txt).replace(/^\uFEFF/,"").trim());arr=Array.isArray(j)?j:j.catatan}
+  catch(e){toast("Teks/berkas bukan cadangan yang valid");return}
+  if(!Array.isArray(arr)){toast("Isi cadangan tidak dikenali");return}
+  const ok=arr.map(bersih).filter(Boolean);
+  if(!ok.length){toast("Tidak ada catatan di cadangan ini");return}
+  pilihan(`${ok.length} catatan ditemukan`,[["➕  Gabungkan",()=>terap(ok,false)],["♻️  Ganti semua",()=>terap(ok,true)]]);
 }
 /* Memeriksa & merapikan satu catatan dari berkas, agar berkas rusak/aneh tidak merusak aplikasi. */
 function bersih(c){
@@ -587,6 +604,32 @@ function terap(ok,ganti){
 function kunci(){if(window.scrollY<2)window.scrollTo(0,2)}
 ["scroll","resize","orientationchange","pageshow","focusin","focusout","load"].forEach(ev=>window.addEventListener(ev,()=>setTimeout(kunci,0),{passive:true}));
 kunci();
+
+/* ---------- OTOMATIS TERSIMPAN (draf) ----------
+   Setiap perubahan di layar (barang, rincian, harga, susut, dll) langsung disimpan sebagai draf di HP.
+   Kalau aplikasi tertutup sebelum sempat menekan 💾, isi terakhir dipulihkan saat dibuka lagi.
+   Tombol 🔄 Transaksi Baru mengosongkan draf. Catatan di tab Catatan tetap hanya berubah lewat 💾. */
+function simpanDraf(){
+  try{
+    if(!items.length){localStorage.removeItem("timsaker_draft");return}
+    localStorage.setItem("timsaker_draft",JSON.stringify({items,akhir,uid,sel,active}));
+  }catch(e){}
+}
+["pagehide","visibilitychange","blur"].forEach(ev=>window.addEventListener(ev,simpanDraf));
+(function(){
+  try{
+    const d=JSON.parse(localStorage.getItem("timsaker_draft")||"null");
+    if(d&&Array.isArray(d.items)&&d.items.length&&d.items.every(x=>x&&Array.isArray(x.det))){
+      items=d.items;
+      akhir=d.akhir&&typeof d.akhir==="object"?{mode:d.akhir.mode==="kg"?"kg":"persen",val:String(d.akhir.val==null?"":d.akhir.val)}:{mode:"persen",val:""};
+      uid=Math.max(Number(d.uid)||1,...items.map(x=>(Number(x.id)||0)+1));
+      sel=items.some(x=>x.id===d.sel)?d.sel:items[0].id;
+      active=saved.some(c=>c.id===d.active)?d.active:null;
+      $("av").value=akhir.val;$("am").value=akhir.mode;
+      setTimeout(()=>toast("Draf terakhir dipulihkan"),300);
+    }
+  }catch(e){}
+})();
 
 draw();
 </script>
